@@ -1,0 +1,24 @@
+# Dependencies (download with npm install)
+node_modules/
+
+# Environment variables (contains API keys, never upload!)
+.env
+api/.env
+
+# Database files (personal data, not shared)
+*.db
+*.db-shm
+*.db-wal
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
