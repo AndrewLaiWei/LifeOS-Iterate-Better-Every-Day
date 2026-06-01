@@ -4,12 +4,20 @@ require('dotenv').config();
 const sqlite3 = require('sqlite3').verbose();
 const initDB = require('./db/init-db');
 const OpenAI = require('openai');
+
+// 优先读 LLM_API_KEY，兼容 OPENAI_API_KEY
+const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
+if (!apiKey) {
+  console.error('❌ 缺少 API Key！请设置环境变量 LLM_API_KEY 或 OPENAI_API_KEY');
+  process.exit(1);
+}
+
 const ai = new OpenAI({
-  apiKey: process.env.LLM_API_KEY,
+  apiKey: apiKey,
   baseURL: process.env.LLM_BASE_URL,
 });
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 const db = initDB();
 
 app.use(cors());
