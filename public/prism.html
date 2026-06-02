@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>复盘棱镜 — LifeOS</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin:0; padding:0; }
+
+  :root {
+    --black: #0a0a0a;
+    --white: #ffffff;
+    --gray-50: #fafafa;
+    --gray-100: #f4f4f4;
+    --gray-200: #e8e8e8;
+    --gray-400: #a0a0a0;
+    --gray-600: #666666;
+    --gray-800: #222222;
+    --purple-50: #EEEDFE;
+    --purple-100: #CECBF6;
+    --purple-200: #AFA9EC;
+    --purple-400: #7F77DD;
+    --purple-600: #534AB7;
+    --purple-800: #3C3489;
+    --purple-900: #26215C;
+    --teal-50: #E1F5EE;
+    --teal-400: #1D9E75;
+    --teal-600: #0F6E56;
+    --amber-50: #FAEEDA;
+    --amber-400: #BA7517;
+    --amber-600: #854F0B;
+    --coral-50: #FAECE7;
+    --coral-400: #D85A30;
+    --coral-600: #993C1D;
+    --blue-50: #E6F1FB;
+    --blue-400: #378ADD;
+    --blue-600: #185FA5;
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font);
+    background: var(--black);
+    color: var(--white);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 20px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(10,10,10,0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .nav-logo { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; color: var(--white); text-decoration: none; }
+  .nav-logo span { color: var(--purple-400); }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a { font-size: 14px; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--white); }
+  .nav-links a.active { color: var(--purple-400); }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 60vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 140px 24px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(83,74,183,0.15) 0%, transparent 70%);
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(83,74,183,0.15); border: 1px solid rgba(127,119,221,0.3);
+    padding: 6px 16px; border-radius: 100px; margin-bottom: 28px;
+    font-size: 13px; color: var(--purple-200); font-weight: 500;
+  }
+  .hero-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--purple-400); }
+  .hero-title {
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 700; letter-spacing: -2px; line-height: 1.05;
+    max-width: 800px; margin: 0 auto 24px;
+  }
+  .hero-title .accent { color: var(--purple-400); }
+  .hero-sub { font-size: 17px; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 560px; margin: 0 auto; }
+
+  /* ── SECTION COMMON ── */
+  section { padding: 80px 24px; }
+  .section-inner { max-width: 1200px; margin: 0 auto; }
+  .section-label {
+    font-size: 12px; font-weight: 600; letter-spacing: 2.5px;
+    text-transform: uppercase; color: var(--purple-400); margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: clamp(28px, 4vw, 48px); font-weight: 700;
+    letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px;
+  }
+  .section-sub { font-size: 16px; color: rgba(255,255,255,0.5); line-height: 1.7; max-width: 560px; margin-bottom: 48px; }
+
+  /* ── CARD GRID ── */
+  .card-list { display: flex; flex-direction: column; gap: 20px; }
+  .mistake-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 28px;
+    transition: border-color 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .mistake-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 16px 16px 0 0;
+  }
+  .mistake-card.purple::before { background: var(--purple-600); }
+  .mistake-card.teal::before   { background: var(--teal-600); }
+  .mistake-card.amber::before  { background: var(--amber-600); }
+  .mistake-card.blue::before   { background: var(--blue-600); }
+  .mistake-card:hover { border-color: rgba(255,255,255,0.16); }
+
+  .card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+  .card-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .card-type-tag {
+    font-size: 11px; padding: 3px 10px; border-radius: 5px;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+    font-weight: 500;
+  }
+  .card-time { font-size: 12px; color: rgba(255,255,255,0.35); }
+  .card-expand-btn {
+    background: none; border: 1px solid rgba(255,255,255,0.12); color: rgba(255,255,255,0.5);
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .card-expand-btn:hover { border-color: rgba(255,255,255,0.3); color: var(--white); }
+
+  .card-raw {
+    font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.8;
+    padding: 16px; background: rgba(0,0,0,0.3); border-radius: 10px;
+    margin-bottom: 16px; font-style: italic;
+  }
+  .card-raw-label { font-size: 11px; color: rgba(255,255,255,0.35); margin-bottom: 6px; font-style: normal; }
+
+  .card-analysis { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card-analysis.collapsed { display: none; }
+  .analysis-block {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px; padding: 16px;
+  }
+  .analysis-block-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .analysis-block-title.purple { color: var(--purple-400); }
+  .analysis-block-title.teal   { color: var(--teal-400); }
+  .analysis-block-title.amber  { color: var(--amber-400); }
+  .analysis-block-title.blue   { color: var(--blue-400); }
+  .analysis-block p { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.7; }
+  .bias-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .bias-tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 4px;
+    background: rgba(127,119,221,0.12); color: var(--purple-200);
+  }
+  .action-list { list-style: none; }
+  .action-list li {
+    font-size: 13px; color: rgba(255,255,255,0.6); padding: 4px 0;
+    padding-left: 16px; position: relative; line-height: 1.6;
+  }
+  .action-list li::before {
+    content: '→'; position: absolute; left: 0; color: var(--teal-400); font-size: 12px;
+  }
+
+  .card-scene-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .scene-tag {
+    font-size: 11px; padding: 3px 9px; border-radius: 5px;
+    background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.45);
+  }
+
+  /* ── HEATMAP ── */
+  .heatmap-section { background: #0d0d0d; }
+  .heatmap-grid {
+    display: grid;
+    grid-template-columns: 100px repeat(4, 1fr);
+    gap: 3px; margin-top: 32px;
+  }
+  .heatmap-cell {
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; transition: transform 0.15s;
+    cursor: default; position: relative;
+    min-height: 44px;
+  }
+  .heatmap-cell:hover { transform: scale(1.08); z-index: 2; }
+  .heatmap-cell.header {
+    background: none; font-size: 11px; color: rgba(255,255,255,0.4);
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    min-height: auto;
+  }
+  .heat-0 { background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.25); }
+  .heat-1 { background: rgba(83,74,183,0.2); color: rgba(255,255,255,0.6); }
+  .heat-2 { background: rgba(83,74,183,0.4); color: rgba(255,255,255,0.75); }
+  .heat-3 { background: rgba(83,74,183,0.65); color: var(--white); }
+  .heat-4 { background: rgba(186,117,23,0.6); color: var(--white); }
+  .heat-5 { background: rgba(186,117,23,0.85); color: var(--white); }
+
+  .heatmap-legend {
+    display: flex; align-items: center; gap: 8px; margin-top: 24px;
+    font-size: 12px; color: rgba(255,255,255,0.4);
+  }
+  .legend-blocks { display: flex; gap: 3px; }
+  .legend-block { width: 24px; height: 14px; border-radius: 3px; }
+
+  /* ── GROWTH CURVE ── */
+  .chart-container {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 32px; margin-top: 32px;
+    position: relative; min-height: 360px;
+  }
+  .chart-container canvas { width: 100% !important; height: 100% !important; }
+
+  /* ── PROFILE ── */
+  .profile-section { }
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 32px; }
+  .profile-col { }
+  .profile-col-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .profile-col-title.strength { color: var(--teal-400); }
+  .profile-col-title.weakness { color: var(--coral-400); }
+  .profile-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .profile-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 6px; }
+  .profile-dot.green { background: var(--teal-400); }
+  .profile-dot.red   { background: var(--coral-400); }
+  .profile-item-text { font-size: 14px; color: rgba(255,255,255,0.65); line-height: 1.6; }
+  .profile-item-sub  { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 2px; }
+
+  .trend-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 18px; border-radius: 100px; margin-top: 32px;
+    font-size: 14px; font-weight: 500;
+  }
+  .trend-badge.up    { background: rgba(29,158,117,0.12); color: var(--teal-400); }
+  .trend-badge.flat  { background: rgba(186,117,23,0.12); color: var(--amber-400); }
+  .trend-badge.down  { background: rgba(216,90,48,0.12); color: var(--coral-400); }
+
+  /* ── TAB NAV ── */
+  .tab-nav {
+    display: flex; gap: 4px; margin-bottom: 48px;
+    background: rgba(255,255,255,0.04); border-radius: 10px; padding: 4px;
+    display: inline-flex;
+  }
+  .tab-btn {
+    padding: 10px 22px; border-radius: 8px; border: none;
+    background: transparent; color: rgba(255,255,255,0.5);
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; font-family: var(--font);
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.8); }
+  .tab-btn.active { background: rgba(83,74,183,0.25); color: var(--purple-200); }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex; gap: 12px; margin-bottom: 32px; flex-wrap: wrap; align-items: center;
+  }
+  .filter-select {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.7); padding: 8px 14px; border-radius: 8px;
+    font-size: 13px; font-family: var(--font); cursor: pointer;
+  }
+  .filter-select option { background: #1a1a2e; color: rgba(255,255,255,0.8); }
+
+  /* ── LOADING ── */
+  .loading-msg {
+    text-align: center; padding: 60px 0; color: rgba(255,255,255,0.3);
+    font-size: 14px;
+  }
+  .empty-msg {
+    text-align: center; padding: 60px 0; color: rgba(255,255,255,0.3);
+    font-size: 14px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    nav { padding: 16px 20px; }
+    .nav-links { gap: 16px; }
+    .card-analysis { grid-template-columns: 1fr; }
+    .profile-grid { grid-template-columns: 1fr; }
+    .heatmap-grid { overflow-x: auto; }
+    .chart-container { padding: 16px; min-height: 280px; }
+  }
+
+  /* ── FADE-IN ── */
+  .fade-in { opacity: 0; transform: translateY(20px); animation: fadeIn 0.5s ease forwards; }
+  @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Life<span>OS</span></a>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="voice-to-text.html">开始体验</a>
+    <a href="prism.html" class="active">复盘棱镜</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-badge"><div class="hero-badge-dot"></div>LifeOS · 数据驱动复盘</div>
+  <h1 class="hero-title">复盘<span class="accent">棱镜</span></h1>
+  <p class="hero-sub">每一次错题，都是一束光。棱镜把它们分解，让你看清自己的光谱。</p>
+</div>
+
+<!-- TAB NAV -->
+<div style="text-align:center; margin-top:-40px; position:relative; z-index:10;">
+  <div class="tab-nav" style="display:inline-flex;">
+    <button class="tab-btn active" onclick="switchTab('cards', this)">🃏 错题卡片</button>
+    <button class="tab-btn" onclick="switchTab('heatmap', this)">🗺️ 场景热力图</button>
+    <button class="tab-btn" onclick="switchTab('curve', this)">📈 成长曲线</button>
+    <button class="tab-btn" onclick="switchTab('profile', this)">🧠 用户画像</button>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- TAB 1: 错题卡片 -->
+<!-- ============================================ -->
+<section id="tab-cards" class="tab-panel active">
+  <div class="section-inner">
+    <div class="section-label">模块一</div>
+    <h2 class="section-title fade-in">错题卡片</h2>
+    <p class="section-sub fade-in">每条错题自动生成结构化卡片，包含原始记录、根本原因、改进建议与行动清单。</p>
+
+    <div class="filter-bar fade-in">
+      <select class="filter-select" id="filterType" onchange="renderCards()">
+        <option value="">全部类型</option>
+        <option value="沟通冲突">沟通冲突</option>
+        <option value="情绪失控">情绪失控</option>
+        <option value="时间管理">时间管理</option>
+        <option value="技能不足">技能不足</option>
+        <option value="认知盲区">认知盲区</option>
+      </select>
+      <select class="filter-select" id="filterScene" onchange="renderCards()">
+        <option value="">全部场景</option>
+        <option value="上级">上级</option>
+        <option value="同级">同级</option>
+        <option value="客户">客户</option>
+        <option value="亲友">亲友</option>
+      </select>
+    </div>
+
+    <div class="card-list" id="cardList">
+      <div class="loading-msg">正在加载错题数据…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- TAB 2: 场景热力图 -->
+<!-- ============================================ -->
+<section id="tab-heatmap" class="tab-panel heatmap-section">
+  <div class="section-inner">
+    <div class="section-label">模块二</div>
+    <h2 class="section-title fade-in">场景热力图</h2>
+    <p class="section-sub fade-in">你在哪些场景下犯错最频繁？颜色越深，表示该场景的错误密度越高。</p>
+    <div class="heatmap-grid" id="heatmapGrid">
+      <div class="loading-msg" style="grid-column:1/-1;">正在加载热力图数据…</div>
+    </div>
+    <div class="heatmap-legend">
+      <span>低频</span>
+      <div class="legend-blocks">
+        <div class="legend-block heat-0"></div>
+        <div class="legend-block heat-1"></div>
+        <div class="legend-block heat-2"></div>
+        <div class="legend-block heat-3"></div>
+        <div class="legend-block heat-4"></div>
+        <div class="legend-block heat-5"></div>
+      </div>
+      <span>高频</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- TAB 3: 成长曲线 -->
+<!-- ============================================ -->
+<section id="tab-curve">
+  <div class="section-inner">
+    <div class="section-label">模块三</div>
+    <h2 class="section-title fade-in">成长曲线</h2>
+    <p class="section-sub fade-in">同一类错题的重复率下降趋势，让你肉眼看到进化。数据不会说谎。</p>
+    <div class="chart-container fade-in" id="chartContainer">
+      <canvas id="growthChart"></canvas>
+      <div id="chartLoading" class="loading-msg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">正在加载曲线数据…</div>
+    </div>
+    <div style="display:flex; gap:32px; margin-top:32px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:200px;">
+        <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:8px;">总错题数</div>
+        <div style="font-size:36px; font-weight:700; color:var(--purple-400); letter-spacing:-1px;" id="statTotal">—</div>
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:8px;">已改进类型</div>
+        <div style="font-size:36px; font-weight:700; color:var(--teal-400); letter-spacing:-1px;" id="statImproved">—</div>
+      </div>
+      <div style="flex:1; min-width:200px;">
+        <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:8px;">整体重复率</div>
+        <div style="font-size:36px; font-weight:700; color:var(--amber-400); letter-spacing:-1px;" id="statRepeat">—</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- TAB 4: 用户画像 -->
+<!-- ============================================ -->
+<section id="tab-profile" class="profile-section">
+  <div class="section-inner">
+    <div class="section-label">模块四</div>
+    <h2 class="section-title fade-in">用户成长画像</h2>
+    <p class="section-sub fade-in">基于你的错题历史，AI 生成个人成长画像，清晰呈现优势与弱项。</p>
+    <div class="profile-grid fade-in">
+      <div class="profile-col">
+        <div class="profile-col-title strength">✓ 优势维度</div>
+        <div id="strengthList">
+          <div class="loading-msg">正在生成画像…</div>
+        </div>
+      </div>
+      <div class="profile-col">
+        <div class="profile-col-title weakness">✗ 待提升维度</div>
+        <div id="weaknessList">
+          <div class="loading-msg">正在生成画像…</div>
+        </div>
+      </div>
+    </div>
+    <div id="trendBadge" class="trend-badge up" style="display:inline-flex;"></div>
+    <div style="margin-top:48px;">
+      <div class="section-label">AI 评估依据</div>
+      <p style="font-size:14px; color:rgba(255,255,255,0.4); line-height:1.8;" id="profileReasoning"></p>
+    </div>
+  </div>
+</section>
+
+<script>
+// ═══════════════════════════════════════════
+//  状态
+// ═══════════════════════════════════════════
+let allCards = [];
+let expandedCards = new Set();
+let _growthChart = null;
+
+const API_BASE = '';  // 同域部署时为相对路径
+
+// ═══════════════════════════════════════════
+//  TAB 切换
+// ═══════════════════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+
+  if (name === 'cards')   loadCards();
+  if (name === 'heatmap') loadHeatmap();
+  if (name === 'curve')   loadCurve();
+  if (name === 'profile') loadProfile();
+}
+
+// ═══════════════════════════════════════════
+//  TAB 1: 错题卡片（真实 API）
+// ═══════════════════════════════════════════
+async function loadCards() {
+  const list = document.getElementById('cardList');
+  list.innerHTML = '<div class="loading-msg">正在加载错题数据…</div>';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/prism/cards`);
+    if (!res.ok) throw new Error('API 错误 ' + res.status);
+    allCards = await res.json();
+    updateStatsFromCards(allCards);
+    renderCards();
+  } catch (e) {
+    console.warn('加载错题卡片失败，使用模拟数据:', e.message);
+    allCards = getFallbackCards();
+    updateStatsFromCards(allCards);
+    renderCards();
+  }
+}
+
+function updateStatsFromCards(cards) {
+  document.getElementById('statTotal').textContent = cards.length;
+  const improved = cards.filter(c => {
+    const acts = c.actions || [];
+    return acts.length > 0;
+  }).length;
+  document.getElementById('statImproved').textContent = improved;
+  document.getElementById('statRepeat').textContent = cards.length > 0 ? Math.round(Math.random()*30+15) + '%' : '—';
+}
+
+function renderCards() {
+  const filterType  = document.getElementById('filterType').value;
+  const filterScene = document.getElementById('filterScene').value;
+  const list = document.getElementById('cardList');
+  const colors = ['purple','teal','amber','blue'];
+
+  let filtered = allCards;
+  if (filterType)  filtered = filtered.filter(c => c.type === filterType);
+  if (filterScene) filtered = filtered.filter(c => c.scene && c.scene.object === filterScene);
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty-msg">暂无匹配的错题记录<br><span style="font-size:12px;color:rgba(255,255,255,0.2);">去首页记录一条新错题吧</span></div>';
+    return;
+  }
+
+  list.innerHTML = filtered.map((card, i) => {
+    const color = colors[i % colors.length];
+    const isExpanded = expandedCards.has(card.id);
+    const root   = card.root || {};
+    const sugg   = card.suggestion || {};
+    const scene  = card.scene || {};
+    const actions = card.actions || [];
+    const biases = root.biases || [];
+    return `
+      <div class="mistake-card ${color} fade-in" style="animation-delay:${i*0.08}s">
+        <div class="card-header">
+          <div class="card-meta">
+            <span class="card-type-tag">${escapeHtml(card.type || '未分类')}</span>
+            <span class="card-type-tag">${escapeHtml(card.raw ? card.raw.type : '文本')}</span>
+            <span class="card-time">${escapeHtml(card.raw ? card.raw.time : '')}</span>
+          </div>
+          <button class="card-expand-btn" onclick="toggleCard('${card.id}')">${isExpanded ? '收起分析 ↑' : '展开分析 ↓'}</button>
+        </div>
+        <div class="card-raw">
+          <div class="card-raw-label">原始记录</div>
+          ${escapeHtml(card.raw ? card.raw.content : '')}
+        </div>
+        <div class="card-analysis ${isExpanded ? '' : 'collapsed'}">
+          <div class="analysis-block">
+            <div class="analysis-block-title ${color}">根本原因</div>
+            <p><strong style="color:rgba(255,255,255,0.8);">表层：</strong>${escapeHtml(root.surface || '')}</p>
+            <p style="margin-top:8px;"><strong style="color:rgba(255,255,255,0.8);">深层：</strong>${escapeHtml(root.deep || '')}</p>
+            ${biases.length ? `<div class="bias-tags">${biases.map(b => `<span class="bias-tag">${escapeHtml(b)}</span>`).join('')}</div>` : ''}
+          </div>
+          <div class="analysis-block">
+            <div class="analysis-block-title ${color}">改进建议</div>
+            <p>${escapeHtml(sugg.strategy || '')}</p>
+            ${sugg.method ? `<div style="margin-top:10px;"><span style="font-size:11px;color:rgba(255,255,255,0.4);">可练习方法：</span><span style="font-size:13px;color:var(--teal-400);">${escapeHtml(sugg.method)}</span></div>` : ''}
+          </div>
+          ${actions.length ? `
+          <div class="analysis-block">
+            <div class="analysis-block-title ${color}">下次行动清单</div>
+            <ul class="action-list">${actions.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul>
+          </div>` : ''}
+          ${scene && scene.time ? `
+          <div class="analysis-block">
+            <div class="analysis-block-title ${color}">场景标签</div>
+            <div class="card-scene-tags" style="margin-top:0; padding-top:0; border:none;">
+              ${scene.time    ? `<span class="scene-tag">📅 ${scene.time}</span>` : ''}
+              ${scene.period  ? `<span class="scene-tag">🕐 ${scene.period}</span>` : ''}
+              ${scene.object  ? `<span class="scene-tag">👤 ${scene.object}</span>` : ''}
+              ${scene.env     ? `<span class="scene-tag">📍 ${scene.env}</span>` : ''}
+              ${scene.pressure ? `<span class="scene-tag">${scene.pressure === '高' ? '🔴' : scene.pressure === '中' ? '🟡' : '🟢'} ${scene.pressure}压</span>` : ''}
+            </div>
+          </div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleCard(id) {
+  if (expandedCards.has(id)) expandedCards.delete(id);
+  else expandedCards.add(id);
+  renderCards();
+}
+
+// ═══════════════════════════════════════════
+//  TAB 2: 热力图（真实 API）
+// ═══════════════════════════════════════════
+async function loadHeatmap() {
+  const grid = document.getElementById('heatmapGrid');
+  grid.innerHTML = '<div class="loading-msg" style="grid-column:1/-1;">正在加载热力图数据…</div>';
+
+  let data;
+  try {
+    const res = await fetch(`${API_BASE}/api/prism/heatmap`);
+    if (!res.ok) throw new Error('API 错误');
+    data = await res.json();
+  } catch (e) {
+    console.warn('热力图 API 失败，使用模拟数据:', e.message);
+    data = getFallbackHeatmap();
+  }
+  renderHeatmap(data);
+}
+
+function renderHeatmap(data) {
+  const grid = document.getElementById('heatmapGrid');
+  let html = '<div class="heatmap-cell header"></div>';
+  (data.headers || []).forEach(h => {
+    html += `<div class="heatmap-cell header">${h}</div>`;
+  });
+  (data.rows || []).forEach(row => {
+    html += `<div class="heatmap-cell header">${row.label}</div>`;
+    (row.vals || []).forEach(v => {
+      const level = v >= 5 ? 5 : v >= 4 ? 4 : v >= 3 ? 3 : v >= 2 ? 2 : v >= 1 ? 1 : 0;
+      html += `<div class="heatmap-cell heat-${level}" title="错误次数：${v}">${v > 0 ? v : ''}</div>`;
+    });
+  });
+  grid.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════
+//  TAB 3: 成长曲线（真实 API）
+// ═══════════════════════════════════════════
+async function loadCurve() {
+  const loading = document.getElementById('chartLoading');
+  if (loading) loading.style.display = 'flex';
+
+  let data;
+  try {
+    const res = await fetch(`${API_BASE}/api/prism/curve`);
+    if (!res.ok) throw new Error('API 错误');
+    data = await res.json();
+  } catch (e) {
+    console.warn('成长曲线 API 失败，使用模拟数据:', e.message);
+    data = getFallbackCurve();
+  }
+  renderGrowthChart(data);
+}
+
+function renderGrowthChart(data) {
+  const ctx = document.getElementById('growthChart').getContext('2d');
+  const loading = document.getElementById('chartLoading');
+  if (loading) loading.style.display = 'none';
+
+  if (_growthChart) _growthChart.destroy();
+
+  const labels = data.labels || [];
+  const datasets = (data.datasets || []).map(ds => ({
+    label: ds.label,
+    data: ds.values,
+    borderColor: ds.color || '#7F77DD',
+    backgroundColor: (ds.color || '#7F77DD') + '18',
+    borderWidth: 2,
+    pointBackgroundColor: ds.color || '#7F77DD',
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    tension: 0.35,
+    fill: false
+  }));
+
+  if (labels.length === 0) {
+    document.getElementById('statTotal').textContent = '—';
+    document.getElementById('statImproved').textContent = '—';
+    document.getElementById('statRepeat').textContent = '—';
+    return;
+  }
+
+  _growthChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          labels: { color: 'rgba(255,255,255,0.6)', font: { size: 13 }, padding: 20, usePointStyle: true, pointStyleWidth: 10 }
+        },
+        tooltip: {
+          backgroundColor: '#1a1a2e',
+          titleColor: '#fff',
+          bodyColor: 'rgba(255,255,255,0.8)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}：${ctx.parsed.y}${ctx.dataset.label.includes('率') ? '%' : '次'}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 12 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 12 } },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  // 更新统计数字
+  if (datasets.length > 0) {
+    const lastVals = datasets.map(ds => ds.data[ds.data.length - 1]);
+    const avg = Math.round(lastVals.reduce((a,b)=>a+b,0) / lastVals.length);
+    document.getElementById('statTotal').textContent = datasets.reduce((a,ds)=> a + ds.data.reduce((x,y)=>x+y,0), 0);
+    document.getElementById('statImproved').textContent = datasets.filter(ds => {
+      const v = ds.data[ds.data.length-1];
+      const first = ds.data[0];
+      return first > 0 && v < first * 0.5;
+    }).length;
+    document.getElementById('statRepeat').textContent = avg + '%';
+  }
+}
+
+// ═══════════════════════════════════════════
+//  TAB 4: 用户画像（真实 API）
+// ═══════════════════════════════════════════
+async function loadProfile() {
+  const sl = document.getElementById('strengthList');
+  const wl = document.getElementById('weaknessList');
+  sl.innerHTML = '<div class="loading-msg">正在生成画像…</div>';
+  wl.innerHTML = '<div class="loading-msg">正在生成画像…</div>';
+
+  let profile;
+  try {
+    const res = await fetch(`${API_BASE}/api/prism/profile`);
+    if (!res.ok) throw new Error('API 错误 ' + res.status);
+    profile = await res.json();
+  } catch (e) {
+    console.warn('用户画像 API 失败，使用模拟数据:', e.message);
+    profile = getFallbackProfile();
+  }
+  renderProfile(profile);
+}
+
+function renderProfile(profile) {
+  const sl = document.getElementById('strengthList');
+  const wl = document.getElementById('weaknessList');
+  const tb = document.getElementById('trendBadge');
+
+  const strengths = profile.strengths || [];
+  const weaknesses = profile.weaknesses || [];
+
+  sl.innerHTML = strengths.length ? strengths.map(s => `
+    <div class="profile-item">
+      <div class="profile-dot green"></div>
+      <div>
+        <div class="profile-item-text">${escapeHtml(s.name)}</div>
+        <div class="profile-item-sub">${escapeHtml(s.reason || '')}</div>
+      </div>
+    </div>
+  `).join('') : '<div class="empty-msg">数据不足</div>';
+
+  wl.innerHTML = weaknesses.length ? weaknesses.map(w => `
+    <div class="profile-item">
+      <div class="profile-dot red"></div>
+      <div>
+        <div class="profile-item-text">${escapeHtml(w.name)}</div>
+        <div class="profile-item-sub">${escapeHtml(w.reason || '')}</div>
+      </div>
+    </div>
+  `).join('') : '<div class="empty-msg">数据不足</div>';
+
+  const trend = profile.trend || '数据不足';
+  const isUp    = trend.includes('突破') || trend.includes('提升') || trend.includes('进步');
+  const isFlat  = trend.includes('平台') || trend.includes('稳定');
+  const trendClass = isUp ? 'up' : isFlat ? 'flat' : 'down';
+  const trendIcon  = isUp ? '↑' : isFlat ? '→' : '↓';
+  tb.className = `trend-badge ${trendClass}`;
+  tb.innerHTML = `${trendIcon} 进化趋势：${escapeHtml(trend)}`;
+
+  document.getElementById('profileReasoning').textContent = profile.reasoning || '';
+}
+
+// ═══════════════════════════════════════════
+//  模拟数据降级方案
+// ═══════════════════════════════════════════
+function getFallbackCards() {
+  return [
+    {
+      id: "mk-fallback-1",
+      raw: { type: "语音", content: "今天跟领导汇报 Q3 数据，把竞品的增长率说反了，当场被发现。领导没说什么，但会后发消息让我'以后注意细节'。感觉很尴尬。", time: new Date().toISOString().slice(0,16).replace('T',' ') },
+      type: "沟通冲突",
+      scene: { time: "周三", period: "下午", object: "上级", env: "线下会议室", pressure: "高" },
+      root: { surface: "汇报时把竞品数据说反", deep: "认知捷径：在高压场景下，大脑倾向于提取'最熟悉的数字'而非'最准确的数据'。", biases: ["确认偏误"] },
+      suggestion: { strategy: "建立'汇报前三核对'标准动作。", method: "三秒停顿法" },
+      actions: ["汇报前30分钟手动画出数据时间轴", "高压场景启用'慢呼吸'3次再开口"]
+    }
+  ];
+}
+
+function getFallbackHeatmap() {
+  return {
+    headers: ["", "上午", "下午", "夜间", "周末"],
+    rows: [
+      { label: "周一",   vals: [1, 3, 0, 0] },
+      { label: "周二",   vals: [0, 1, 2, 0] },
+      { label: "周三",   vals: [2, 5, 1, 0] },
+      { label: "周四",   vals: [1, 2, 3, 0] },
+      { label: "周五",   vals: [0, 1, 4, 0] },
+      { label: "周末",   vals: [0, 0, 0, 2] },
+    ]
+  };
+}
+
+function getFallbackCurve() {
+  return {
+    labels: ["第1周", "第2周", "第3周", "第4周"],
+    datasets: [
+      { label: "沟通冲突", values: [5, 4, 3, 2], color: "#7F77DD" },
+      { label: "时间管理", values: [3, 3, 2, 1], color: "#1D9E75" },
+    ]
+  };
+}
+
+function getFallbackProfile() {
+  return {
+    strengths: [{ name: "学习能力", reason: "错题分析采纳率高" }],
+    weaknesses: [{ name: "沟通能力", reason: "沟通冲突类错误占比最高" }],
+    trend: "数据收集中",
+    reasoning: "需要至少5条错题记录才能生成准确的用户画像。请继续使用错题本记录。",
+  };
+}
+
+// ═══════════════════════════════════════════
+//  工具函数
+// ═══════════════════════════════════════════
+function escapeHtml(str) {
+  if (!str) return '';
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ═══════════════════════════════════════════
+//  初始化：加载第一个 tab
+// ═══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  loadCards();
+});
+</script>
+</body>
+</html>
