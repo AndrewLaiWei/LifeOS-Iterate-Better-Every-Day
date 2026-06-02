@@ -165,7 +165,7 @@
     text-decoration: line-through;
   }
 
-  /* 整理预览区 */
+  /* AI 整理预览区 */
   #previewCard {
     margin-top: 24px;
     width: 100%;
@@ -185,52 +185,23 @@
     padding-bottom: 8px;
     border-bottom: 1px solid #2a2a3a;
   }
-  .preview-item {
-    margin-bottom: 10px;
+  #previewText {
     font-size: 14px;
-    line-height: 1.7;
-  }
-  .preview-item-q {
-    color: #7070a0;
-    font-weight: 500;
-  }
-  .preview-item-a {
+    line-height: 1.8;
     color: #b0b0d0;
-    margin-top: 2px;
-    padding-left: 12px;
-    border-left: 2px solid #2a3a4a;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
-  .preview-item-a.skipped {
-    color: #404060;
-    font-style: italic;
+  #previewText.loading-text {
+    color: #505070;
   }
   .preview-empty {
     color: #404060;
     font-size: 13px;
   }
-
-  /* 开始分析大按钮 */
-  #analyzeBtn {
-    margin-top: 24px;
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #3a6a4a, #2a5a3a);
-    color: #d0f0d0;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-    letter-spacing: 1px;
-  }
-  #analyzeBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(60,140,80,0.3); }
-  #analyzeBtn:active { transform: translateY(0); }
-  #analyzeBtn:disabled {
-    background: #2a2a3a;
-    color: #505060;
-    cursor: not-allowed;
-    box-shadow: none;
+  .preview-loading {
+    color: #505070;
+    font-size: 13px;
   }
 
   /* 再来一条按钮 */
@@ -356,13 +327,13 @@
     </div>
   </div>
 
-  <!-- 整理后的语音记录预览 -->
+  <!-- AI 整理后的记录预览 -->
   <div id="previewCard">
-    <div class="preview-label">语音记录整理</div>
-    <div id="previewContent"><div class="preview-empty">开始回答问题后，这里会显示整理后的记录</div></div>
+    <div class="preview-label">AI 整理后的记录</div>
+    <div id="previewContent"><div class="preview-empty">回答问题后，AI 会自动整理语音记录并在这里显示</div></div>
   </div>
 
-  <button id="analyzeBtn" onclick="submitForAnalysis()">开始 AI 分析</button>
+  <button id="analyzeBtn" onclick="submitForAnalysis()" style="display:none;margin-top:24px;width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(135deg,#3a6a4a,#2a5a3a);color:#d0f0d0;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;letter-spacing:1px;">确认，开始深度分析</button>
   <button id="resetBtn" onclick="resetAll()">再来一条</button>
 </div>
 
@@ -381,6 +352,9 @@ let recognition = null;
 let finalTranscript = '';
 let guideAnswers = {};     // { event: '...', action: '...', ... }
 let guideSkipped = {};     // 记录哪些问题被跳过
+let cleanedText = '';      // AI 整理后的干净文字
+let cleanupTimer = null; // 自动整理防抖定时器
+const CLEANUP_DELAY = 1500; // 回答结束后1.5秒自动触发整理
 
 const status = document.getElementById('status');
 const analysisDiv = document.getElementById('analysis');
@@ -449,7 +423,8 @@ function initRecognition() {
         document.getElementById('q' + getQuestionNum(recordingTarget)).classList.add('answered');
       }
       resetGuideBtn(recordingTarget);
-      updatePreview();
+      // 自动触发 AI 整理
+      triggerAutoCleanup();
     } else {
       // 录音中自动断开，重新启动
       try { recognition.start(); } catch(e) {}
@@ -463,39 +438,59 @@ function getQuestionNum(key) {
   return map[key] || 1;
 }
 
-// ===== 整理预览区实时更新 =====
-const questionLabels = {
-  event: '发生了什么事',
-  action: '当时做了什么',
-  thought: '当时是怎么想的',
-  consequence: '导致了什么后果',
-  plan: '以后打算怎么做'
-};
+// ===== 自动触发 AI 整理（debounce）=====
+function triggerAutoCleanup() {
+  // 至少有一个回答才触发
+  const hasAnswers = Object.keys(guideAnswers).length > 0;
+  if (!hasAnswers) return;
 
-function updatePreview() {
+  // 清除旧定时器
+  if (cleanupTimer) clearTimeout(cleanupTimer);
+
+  // 1.5秒后自动触发
+  cleanupTimer = setTimeout(() => {
+    doCleanup();
+  }, CLEANUP_DELAY);
+}
+
+// ===== AI 整理语音记录（自动调用）=====
+async function doCleanup() {
+  const analyzeBtn = document.getElementById('analyzeBtn');
   const previewCard = document.getElementById('previewCard');
   const previewContent = document.getElementById('previewContent');
 
-  // 检查是否有任何回答或跳过
-  const hasAny = Object.keys(guideAnswers).length > 0 || Object.keys(guideSkipped).length > 0;
-
-  if (!hasAny) {
-    previewCard.classList.remove('has-content');
-    previewContent.innerHTML = '<div class="preview-empty">开始回答问题后，这里会显示整理后的记录</div>';
-    return;
-  }
-
   previewCard.classList.add('has-content');
-  let html = '';
-  ['event', 'action', 'thought', 'consequence', 'plan'].forEach(key => {
-    const label = questionLabels[key];
-    if (guideSkipped[key]) {
-      html += '<div class="preview-item"><div class="preview-item-q">Q: ' + label + '？</div><div class="preview-item-a skipped">（已跳过）</div></div>';
-    } else if (guideAnswers[key]) {
-      html += '<div class="preview-item"><div class="preview-item-q">Q: ' + label + '？</div><div class="preview-item-a">' + escapeHtml(guideAnswers[key]) + '</div></div>';
+  previewContent.innerHTML = '<div class="preview-loading">AI 正在整理语音记录…</div>';
+  status.textContent = 'AI 正在整理语音记录…';
+
+  try {
+    const res = await fetch('/api/cleanup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers: guideAnswers }),
+    });
+
+    if (!res.ok) {
+      const errText = await res.text();
+      throw new Error(errText);
     }
-  });
-  previewContent.innerHTML = html;
+
+    const data = await res.json();
+    cleanedText = data.cleaned || '';
+
+    previewContent.innerHTML = '<div id="previewText">' + escapeHtml(cleanedText) + '</div>';
+    previewCard.style.borderColor = '#3a5a5a';
+    status.textContent = '记录已整理，可点击绿色按钮开始分析';
+
+    // 显示绿色分析按钮
+    analyzeBtn.style.display = 'block';
+
+  } catch (err) {
+    previewContent.innerHTML = '<div class="preview-loading" style="color:#cc5566">整理失败，可直接点击绿色按钮分析</div>';
+    status.textContent = '整理失败，可直接分析';
+    // 整理失败也允许分析
+    analyzeBtn.style.display = 'block';
+  }
 }
 
 // 跳过某个问题
@@ -509,7 +504,8 @@ function skipQuestion(key) {
     skipBtn.classList.add('skipped');
     skipBtn.textContent = '已跳过';
   }
-  updatePreview();
+  // 自动触发 AI 整理
+  triggerAutoCleanup();
 }
 
 // 重置引导问题录音按钮
@@ -574,21 +570,21 @@ document.querySelectorAll('.guide-rec-btn').forEach(btn => {
   });
 });
 
-// ===== 开始 AI 分析 =====
+// ===== 第2步：确认，开始深度分析 =====
 async function submitForAnalysis() {
-  status.textContent = '正在保存并发送给 AI 分析…';
+  status.textContent = '正在保存并发送给 AI 深度分析…';
   analysisDiv.style.display = 'block';
-  analysisContent.innerHTML = '<span class="loading">AI 正在思考中…</span>';
+  analysisContent.innerHTML = '<span class="loading">AI 正在深度分析中…</span>';
 
   const analyzeBtn = document.getElementById('analyzeBtn');
   analyzeBtn.disabled = true;
-  analyzeBtn.textContent = '分析中…';
+  analyzeBtn.textContent = '深度分析中…';
 
-  // 把所有回答拼成 raw_text（兼容后端）
-  const rawText = Object.entries(guideAnswers).map(([k, v]) => v).join('\n');
+  // 优先用 AI 整理后的文字，没有就用原始拼接
+  const rawText = cleanedText || Object.entries(guideAnswers).map(([k, v]) => v).join('\n');
 
   try {
-    // 第 1 步：保存到数据库
+    // 第 1 步：保存到数据库（同时存原始+整理后的）
     const saveRes = await fetch('/api/mistakes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -609,14 +605,13 @@ async function submitForAnalysis() {
       throw new Error('保存成功但未返回ID');
     }
 
-    // 第 2 步：调 AI 分析
+    // 第 2 步：调 AI 深度分析（用整理后的文字）
     const analyzeRes = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: saveData.id,
         raw_text: rawText,
-        answers: guideAnswers,
       }),
     });
 
@@ -670,7 +665,7 @@ async function submitForAnalysis() {
     status.textContent = '请求失败';
   } finally {
     analyzeBtn.disabled = false;
-    analyzeBtn.textContent = '开始 AI 分析';
+    analyzeBtn.textContent = '确认，开始深度分析';
   }
 }
 
@@ -678,13 +673,22 @@ async function submitForAnalysis() {
 function resetAll() {
   guideAnswers = {};
   guideSkipped = {};
+  cleanedText = '';
   finalTranscript = '';
   analysisDiv.style.display = 'none';
   analysisContent.innerHTML = '';
   status.textContent = '';
   document.getElementById('resetBtn').style.display = 'none';
+  // 隐藏分析按钮
+  document.getElementById('analyzeBtn').style.display = 'none';
+  // 清空预览框
+  const previewCard = document.getElementById('previewCard');
+  const previewContent = document.getElementById('previewContent');
+  previewCard.classList.remove('has-content');
+  previewCard.style.borderColor = '';
+  previewContent.innerHTML = '<div class="preview-empty">回答问题后，AI 会自动整理语音记录并在这里显示</div>';
+
   guidePanel.style.display = 'block';
-  updatePreview();
 
   // 重置所有问题状态
   document.querySelectorAll('.guide-question').forEach(q => q.classList.remove('answered'));
