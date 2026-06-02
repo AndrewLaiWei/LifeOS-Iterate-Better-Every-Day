@@ -30,35 +30,49 @@
     letter-spacing: 2px;
   }
 
-  /* 录音按钮 */
-  #recordBtn {
-    width: 120px;
-    height: 120px;
+  /* 录音按钮（主录音和引导问题共用） */
+  .record-btn {
+    width: 52px;
+    height: 52px;
     border-radius: 50%;
     border: none;
     background: linear-gradient(135deg, #4a4a6a, #3a3a5a);
     color: #d0d0f0;
-    font-size: 48px;
+    font-size: 20px;
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 8px 32px rgba(80, 80, 200, 0.2);
+    box-shadow: 0 4px 16px rgba(80, 80, 200, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
+    flex-shrink: 0;
   }
-  #recordBtn:hover { transform: scale(1.05); }
-  #recordBtn:active { transform: scale(0.95); }
-
-  #recordBtn.recording {
+  .record-btn:hover { transform: scale(1.08); }
+  .record-btn:active { transform: scale(0.95); }
+  .record-btn.recording {
     background: linear-gradient(135deg, #cc3344, #aa2244);
+    box-shadow: 0 4px 20px rgba(200, 50, 80, 0.5);
+    animation: pulse-sm 1.2s infinite;
+  }
+
+  /* 主录音大按钮 */
+  #recordBtn {
+    width: 120px;
+    height: 120px;
+    font-size: 48px;
+    box-shadow: 0 8px 32px rgba(80, 80, 200, 0.2);
+  }
+  #recordBtn.recording {
     box-shadow: 0 8px 32px rgba(200, 50, 80, 0.4);
-    animation: pulse 1.5s infinite;
   }
 
   @keyframes pulse {
     0%, 100% { box-shadow: 0 8px 32px rgba(200,50,80,0.4); }
     50% { box-shadow: 0 8px 48px rgba(200,50,80,0.7); }
+  }
+  @keyframes pulse-sm {
+    0%, 100% { box-shadow: 0 4px 20px rgba(200,50,80,0.5); }
+    50% { box-shadow: 0 4px 32px rgba(200,50,80,0.8); }
   }
 
   /* 状态文字 */
@@ -130,6 +144,131 @@
     font-variant-numeric: tabular-nums;
     display: none;
   }
+
+  /* ====== 引导式补充录音区域 ====== */
+  #guidePanel {
+    margin-top: 32px;
+    width: 100%;
+    max-width: 600px;
+    display: none;
+  }
+
+  #guidePanel h2 {
+    font-size: 16px;
+    color: #8080b0;
+    margin-bottom: 16px;
+    font-weight: 600;
+  }
+
+  .guide-hint {
+    font-size: 13px;
+    color: #505070;
+    margin-bottom: 20px;
+    line-height: 1.6;
+  }
+
+  .guide-question {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: border-color 0.3s;
+  }
+
+  .guide-question.answered {
+    border-color: #2a5a3a;
+  }
+
+  .guide-question-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .guide-question-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #2a2a4a;
+    color: #8080b0;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .guide-question-text {
+    font-size: 14px;
+    color: #a0a0c0;
+    flex: 1;
+  }
+
+  .guide-question-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .guide-answer {
+    flex: 1;
+    min-height: 40px;
+    font-size: 14px;
+    color: #505070;
+    line-height: 1.6;
+    padding: 8px 0;
+    word-break: break-word;
+  }
+
+  .guide-answer.has-text {
+    color: #b0b0d0;
+  }
+
+  .guide-skip-btn {
+    font-size: 12px;
+    color: #505070;
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    background: transparent;
+    transition: all 0.2s;
+    flex-shrink: 0;
+  }
+  .guide-skip-btn:hover {
+    color: #8080a0;
+    border-color: #3a3a5a;
+  }
+  .guide-skip-btn.skipped {
+    color: #505060;
+    text-decoration: line-through;
+  }
+
+  /* 开始分析大按钮 */
+  #analyzeBtn {
+    margin-top: 24px;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3a6a4a, #2a5a3a);
+    color: #d0f0d0;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    letter-spacing: 1px;
+  }
+  #analyzeBtn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(60,140,80,0.3); }
+  #analyzeBtn:active { transform: translateY(0); }
+  #analyzeBtn:disabled {
+    background: #2a2a3a;
+    color: #505060;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
 </style>
 </head>
 <body>
@@ -140,17 +279,91 @@
 <div id="timer"></div>
 <div id="status">点击按钮开始录音</div>
 <div id="result" class="card"></div>
+
+<!-- 引导式补充录音面板（录音完成后显示） -->
+<div id="guidePanel">
+  <h2>📝 为了更精准的分析，请补充以下信息</h2>
+  <div class="guide-hint">每个问题都可以用录音回答或点击「跳过」。回答得越详细，AI 分析越精准。</div>
+
+  <div class="guide-question" id="q1" data-key="event">
+    <div class="guide-question-header">
+      <div class="guide-question-num">1</div>
+      <div class="guide-question-text">发生了什么事？</div>
+    </div>
+    <div class="guide-question-body">
+      <div class="guide-answer" id="answer-event">点击 🎙 录音回答</div>
+      <button class="record-btn guide-rec-btn" data-key="event" title="录音">🎙</button>
+      <button class="guide-skip-btn" onclick="skipQuestion('event')">跳过</button>
+    </div>
+  </div>
+
+  <div class="guide-question" id="q2" data-key="action">
+    <div class="guide-question-header">
+      <div class="guide-question-num">2</div>
+      <div class="guide-question-text">当时做了什么？</div>
+    </div>
+    <div class="guide-question-body">
+      <div class="guide-answer" id="answer-action">点击 🎙 录音回答</div>
+      <button class="record-btn guide-rec-btn" data-key="action" title="录音">🎙</button>
+      <button class="guide-skip-btn" onclick="skipQuestion('action')">跳过</button>
+    </div>
+  </div>
+
+  <div class="guide-question" id="q3" data-key="thought">
+    <div class="guide-question-header">
+      <div class="guide-question-num">3</div>
+      <div class="guide-question-text">你当时是怎么想的？</div>
+    </div>
+    <div class="guide-question-body">
+      <div class="guide-answer" id="answer-thought">点击 🎙 录音回答</div>
+      <button class="record-btn guide-rec-btn" data-key="thought" title="录音">🎙</button>
+      <button class="guide-skip-btn" onclick="skipQuestion('thought')">跳过</button>
+    </div>
+  </div>
+
+  <div class="guide-question" id="q4" data-key="consequence">
+    <div class="guide-question-header">
+      <div class="guide-question-num">4</div>
+      <div class="guide-question-text">导致了什么后果？</div>
+    </div>
+    <div class="guide-question-body">
+      <div class="guide-answer" id="answer-consequence">点击 🎙 录音回答</div>
+      <button class="record-btn guide-rec-btn" data-key="consequence" title="录音">🎙</button>
+      <button class="guide-skip-btn" onclick="skipQuestion('consequence')">跳过</button>
+    </div>
+  </div>
+
+  <div class="guide-question" id="q5" data-key="plan">
+    <div class="guide-question-header">
+      <div class="guide-question-num">5</div>
+      <div class="guide-question-text">以后打算怎么做？</div>
+    </div>
+    <div class="guide-question-body">
+      <div class="guide-answer" id="answer-plan">点击 🎙 录音回答</div>
+      <button class="record-btn guide-rec-btn" data-key="plan" title="录音">🎙</button>
+      <button class="guide-skip-btn" onclick="skipQuestion('plan')">跳过</button>
+    </div>
+  </div>
+
+  <button id="analyzeBtn" onclick="submitForAnalysis()">🚀 完成补充，开始 AI 分析</button>
+</div>
+
 <div id="analysis" class="card" style="display:none">
   <div class="card-label">🤖 AI 分析</div>
   <div id="analysis-content"></div>
 </div>
 
 <script>
+// ===== 全局状态 =====
 let isRecording = false;
+let recordingTarget = 'main'; // 'main' = 主录音, 'event'/'action'/... = 引导问题录音
 let recognition = null;
 let timerInterval = null;
 let seconds = 0;
 let finalTranscript = '';
+let mainText = '';          // 主录音最终文字
+let guideAnswers = {};     // 引导问题的回答 { event: '...', action: '...', ... }
+let guideSkipped = {};      // 记录哪些问题被跳过了
 
 const btn = document.getElementById('recordBtn');
 const status = document.getElementById('status');
@@ -158,6 +371,7 @@ const result = document.getElementById('result');
 const timerEl = document.getElementById('timer');
 const analysisDiv = document.getElementById('analysis');
 const analysisContent = document.getElementById('analysis-content');
+const guidePanel = document.getElementById('guidePanel');
 
 // ===== 检查浏览器支持 =====
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -169,20 +383,27 @@ if (!SpeechRecognition) {
 // ===== 初始化语音识别 =====
 function initRecognition() {
   recognition = new SpeechRecognition();
-  recognition.lang = 'zh-CN';       // 中文识别
-  recognition.interimResults = true;   // 实时显示中间结果
-  recognition.continuous = true;      // 持续识别
+  recognition.lang = 'zh-CN';
+  recognition.interimResults = true;
+  recognition.continuous = true;
   recognition.maxAlternatives = 1;
 
   recognition.onstart = () => {
-    status.textContent = '🎙 正在录音，请说话…';
-    timerEl.style.display = 'block';
-    startTimer();
+    if (recordingTarget === 'main') {
+      status.textContent = '🎙 正在录音，请说话…';
+      timerEl.style.display = 'block';
+      startTimer();
+    } else {
+      // 引导问题录音：更新对应问题的状态
+      const answerEl = document.getElementById('answer-' + recordingTarget);
+      answerEl.textContent = '🎙 正在录音…';
+      answerEl.classList.add('has-text');
+      answerEl.style.color = '#cc5566';
+    }
   };
 
   recognition.onresult = (event) => {
     let interimText = '';
-    // 只从 resultIndex 开始处理新结果，避免重复累加
     for (let i = event.resultIndex; i < event.results.length; i++) {
       const text = event.results[i][0].transcript;
       if (event.results[i].isFinal) {
@@ -191,46 +412,104 @@ function initRecognition() {
         interimText += text;
       }
     }
-    // 显示：最终结果 + 灰色中间结果
-    result.innerHTML = escapeHtml(finalTranscript) +
-      (interimText ? `<span style="color:#555577">${escapeHtml(interimText)}</span>` : '');
+
+    if (recordingTarget === 'main') {
+      // 主录音：显示在 result 区域
+      result.innerHTML = escapeHtml(finalTranscript) +
+        (interimText ? '<span style="color:#555577">' + escapeHtml(interimText) + '</span>' : '');
+    } else {
+      // 引导问题录音：显示在对应问题的回答区
+      const answerEl = document.getElementById('answer-' + recordingTarget);
+      answerEl.innerHTML = escapeHtml(finalTranscript) +
+        (interimText ? '<span style="color:#555577">' + escapeHtml(interimText) + '</span>' : '');
+      answerEl.style.color = '#b0b0d0';
+    }
   };
 
   recognition.onerror = (event) => {
     console.error('语音识别错误:', event.error);
     if (event.error === 'not-allowed') {
-      status.textContent = '❌ 请允许浏览器使用麦克风权限';
+      if (recordingTarget === 'main') {
+        status.textContent = '❌ 请允许浏览器使用麦克风权限';
+      }
     } else if (event.error === 'no-speech') {
-      status.textContent = '🎙 未检测到语音，请继续说话…';
+      // 不显示错误，静默处理
     } else if (event.error === 'network') {
-      status.textContent = '❌ 网络错误，请检查网络连接';
-    } else {
-      status.textContent = '⚠️ 识别错误：' + event.error;
+      if (recordingTarget === 'main') {
+        status.textContent = '❌ 网络错误，请检查网络连接';
+      }
     }
   };
 
   recognition.onend = () => {
     if (!isRecording) {
-      // 停止录音后：先显示最终结果，再自动保存+分析
+      // 停止录音后的处理
       const text = finalTranscript.trim();
-      if (text) {
-        result.textContent = text;
-        saveAndAnalyze(text);
-      } else {
-        // 尝试从当前显示的 HTML 中提取文本作为后备
-        const fallback = result.textContent.replace(/\s/g, '').trim();
-        if (fallback) {
-          result.textContent = fallback;
-          saveAndAnalyze(fallback);
+
+      if (recordingTarget === 'main') {
+        // 主录音结束 → 显示引导问题面板
+        if (text) {
+          result.textContent = text;
+          mainText = text;
+          showGuidePanel();
         } else {
           status.textContent = '⚠️ 没有识别到文字';
         }
+      } else {
+        // 引导问题录音结束 → 保存答案
+        if (text) {
+          guideAnswers[recordingTarget] = text;
+          const answerEl = document.getElementById('answer-' + recordingTarget);
+          answerEl.textContent = text;
+          answerEl.classList.add('has-text');
+          // 标记为已回答
+          document.getElementById('q' + getQuestionNum(recordingTarget)).classList.add('answered');
+        }
+        // 恢复按钮状态
+        resetGuideBtn(recordingTarget);
       }
     } else {
       // 录音中自动断开，重新启动
       try { recognition.start(); } catch(e) {}
     }
   };
+}
+
+// 根据问题 key 获取序号
+function getQuestionNum(key) {
+  const map = { event: 1, action: 2, thought: 3, consequence: 4, plan: 5 };
+  return map[key] || 1;
+}
+
+// 显示引导问题面板
+function showGuidePanel() {
+  status.textContent = '✅ 语音已记录！请补充以下信息（可跳过）';
+  guidePanel.style.display = 'block';
+  // 滚动到引导面板
+  setTimeout(() => {
+    guidePanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 200);
+}
+
+// 跳过某个问题
+function skipQuestion(key) {
+  guideSkipped[key] = true;
+  const answerEl = document.getElementById('answer-' + key);
+  answerEl.textContent = '已跳过';
+  answerEl.style.color = '#404050';
+  const skipBtn = answerEl.nextElementSibling.nextElementSibling;
+  if (skipBtn) {
+    skipBtn.classList.add('skipped');
+    skipBtn.textContent = '已跳过';
+  }
+}
+
+// 重置引导问题录音按钮
+function resetGuideBtn(key) {
+  const questionEl = document.getElementById('q' + getQuestionNum(key));
+  const recBtn = questionEl.querySelector('.guide-rec-btn');
+  recBtn.classList.remove('recording');
+  recBtn.textContent = '🎙';
 }
 
 function startTimer() {
@@ -256,24 +535,41 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ===== 按钮点击 =====
+// ===== 主录音按钮点击 =====
 btn.addEventListener('click', () => {
   if (!isRecording) {
-    startRecording();
+    startMainRecording();
   } else {
     stopRecording();
   }
 });
 
-function startRecording() {
+function startMainRecording() {
   if (!recognition) initRecognition();
 
   isRecording = true;
+  recordingTarget = 'main';
   btn.classList.add('recording');
   btn.textContent = '⏹';
   result.textContent = '';
   finalTranscript = '';
+  mainText = '';
+  guideAnswers = {};
+  guideSkipped = {};
   analysisDiv.style.display = 'none';
+  guidePanel.style.display = 'none';
+
+  // 重置所有引导问题状态
+  document.querySelectorAll('.guide-question').forEach(q => q.classList.remove('answered'));
+  document.querySelectorAll('.guide-answer').forEach(a => {
+    a.textContent = '点击 🎙 录音回答';
+    a.classList.remove('has-text');
+    a.style.color = '';
+  });
+  document.querySelectorAll('.guide-skip-btn').forEach(s => {
+    s.classList.remove('skipped');
+    s.textContent = '跳过';
+  });
 
   try {
     recognition.start();
@@ -287,63 +583,111 @@ function stopRecording() {
   btn.classList.remove('recording');
   btn.textContent = '🎙';
   stopTimer();
-
-  // 停止语音识别，onend 回调会接管后续处理
   try { recognition.stop(); } catch(e) {}
 }
 
-// ===== 自动保存到服务器 + 调 AI 分析 =====
-async function saveAndAnalyze(text) {
+// ===== 引导问题录音按钮点击 =====
+document.querySelectorAll('.guide-rec-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.getAttribute('data-key');
+
+    if (btn.classList.contains('recording')) {
+      // 正在录音 → 停止
+      isRecording = false;
+      btn.classList.remove('recording');
+      btn.textContent = '🎙';
+      try { recognition.stop(); } catch(e) {}
+    } else {
+      // 先停掉其他正在录音的按钮
+      document.querySelectorAll('.guide-rec-btn.recording').forEach(otherBtn => {
+        otherBtn.classList.remove('recording');
+        otherBtn.textContent = '🎙';
+      });
+
+      // 开始录音这个问题的回答
+      if (!recognition) initRecognition();
+
+      isRecording = true;
+      recordingTarget = key;
+      btn.classList.add('recording');
+      btn.textContent = '⏹';
+      finalTranscript = '';
+
+      // 取消跳过状态
+      delete guideSkipped[key];
+      const answerEl = document.getElementById('answer-' + key);
+      answerEl.textContent = '🎙 点击开始说话…';
+      answerEl.style.color = '#cc5566';
+      const skipBtn = answerEl.nextElementSibling.nextElementSibling;
+      if (skipBtn) {
+        skipBtn.classList.remove('skipped');
+        skipBtn.textContent = '跳过';
+      }
+
+      try {
+        recognition.start();
+      } catch(e) {
+        console.warn('recognition.start() 异常:', e);
+      }
+    }
+  });
+});
+
+// ===== 完成补充，开始 AI 分析 =====
+async function submitForAnalysis() {
   status.textContent = '⏳ 正在保存并发送给 AI 分析…';
   analysisDiv.style.display = 'block';
   analysisContent.innerHTML = '<span class="loading">🤖 AI 正在思考中…</span>';
 
+  // 禁用分析按钮
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  analyzeBtn.disabled = true;
+  analyzeBtn.textContent = '⏳ 分析中…';
+
   try {
-    // 第 1 步：保存错题到数据库
+    // 第 1 步：保存错题到数据库（包含结构化回答）
     const saveRes = await fetch('/api/mistakes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         time: new Date().toLocaleString('zh-CN'),
-        raw_text: text,
+        raw_text: mainText,
+        structured: JSON.stringify(guideAnswers),
       }),
     });
-    
+
     if (!saveRes.ok) {
       const errText = await saveRes.text();
       throw new Error('保存失败(' + saveRes.status + '): ' + errText);
     }
-    
+
     const saveData = await saveRes.json();
-    console.log('保存成功，返回的ID:', saveData.id);
-    
     if (!saveData.id) {
-      throw new Error('保存成功但未返回ID，返回数据: ' + JSON.stringify(saveData));
+      throw new Error('保存成功但未返回ID');
     }
-    
-    // 第 2 步：调 AI 分析
+
+    // 第 2 步：调 AI 分析（传入结构化回答）
     const analyzeRes = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: saveData.id,
-        raw_text: text,
+        raw_text: mainText,
+        answers: guideAnswers,
       }),
     });
-    
+
     if (!analyzeRes.ok) {
       const errText = await analyzeRes.text();
       throw new Error('AI分析失败(' + analyzeRes.status + '): ' + errText);
     }
-    
+
     const analyzeData = await analyzeRes.json();
 
     // 显示分析结果
     if (analyzeData.analysis) {
       try {
-        // 解析 AI 返回的 JSON 字符串
         const analysisObj = JSON.parse(analyzeData.analysis);
-        // 格式化成可读文本
         let html = '';
         html += '<div style="margin-bottom:12px"><strong>📌 事件记录</strong><br>' + escapeHtml(analysisObj.eventRecord || '') + '</div>';
         html += '<div style="margin-bottom:12px"><strong>🔍 表面原因</strong><br>' + escapeHtml(analysisObj.surfaceCause || '') + '</div>';
@@ -358,11 +702,11 @@ async function saveAndAnalyze(text) {
         html += '</ul></div>';
         html += '<div><strong>🎯 长期价值</strong><br>' + escapeHtml(analysisObj.longTermValue || '') + '</div>';
         analysisContent.innerHTML = html;
+        status.textContent = '✅ 分析完成！';
       } catch (e) {
-        // 解析失败就显示原始文本
         analysisContent.textContent = analyzeData.analysis;
+        status.textContent = '✅ 分析完成！';
       }
-      status.textContent = '✅ 分析完成！';
     } else if (analyzeData.error) {
       analysisContent.textContent = '❌ AI 分析失败：' + analyzeData.error;
       status.textContent = '❌ 分析失败';
@@ -372,8 +716,12 @@ async function saveAndAnalyze(text) {
     }
   } catch (err) {
     console.error('保存/分析失败:', err);
-    analysisContent.textContent = '❌ 请求失败，请检查服务器是否启动';
+    analysisContent.textContent = '❌ 请求失败：' + err.message;
     status.textContent = '❌ 请求失败';
+  } finally {
+    // 恢复分析按钮
+    analyzeBtn.disabled = false;
+    analyzeBtn.textContent = '🚀 完成补充，开始 AI 分析';
   }
 }
 </script>
