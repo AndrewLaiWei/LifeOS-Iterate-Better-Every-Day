@@ -3,6 +3,11 @@
 
 const { db, initTable } = require('./db');
 
+// 把 undefined 转成 null，Turso 不支持 undefined 参数
+function safeArgs(arr) {
+  return arr.map(v => v === undefined ? null : v);
+}
+
 module.exports = async (req, res) => {
   try {
     // 确保表存在
@@ -15,7 +20,7 @@ module.exports = async (req, res) => {
       const result_db = await db.execute({
         sql: `INSERT INTO mistake_records (time, scene, event, mistake, result, raw_text)
               VALUES (?, ?, ?, ?, ?, ?)`,
-        args: [time, scene, event, mistake, result, raw_text],
+        args: safeArgs([time, scene, event, mistake, result, raw_text]),
       });
 
       const lastInsertId = Number(result_db.lastInsertRowid);
