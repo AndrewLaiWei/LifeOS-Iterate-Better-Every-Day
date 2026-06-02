@@ -6,9 +6,6 @@ const initDB = require('./db/init-db');
 const OpenAI = require('openai');
 
 // 优先读 LLM_API_KEY，兼容 OPENAI_API_KEY
-console.log('LLM_API_KEY =', process.env.LLM_API_KEY);
-console.log('OPENAI_API_KEY =', process.env.OPENAI_API_KEY);
-
 const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY;
 
 if (!apiKey) {
