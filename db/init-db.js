@@ -37,7 +37,11 @@ function initDB() {
       analysis_json TEXT,
       
       -- 标签（逗号分隔）
-      tags TEXT
+      tags TEXT,
+
+      -- V2: 错题分类
+      category TEXT,
+      scenario TEXT
     )
   `, (err) => {
     if (err) {
@@ -46,6 +50,10 @@ function initDB() {
       console.log('✅ mistake_records 表就绪');
     }
   });
+
+  // V2 迁移：为已有表添加新列（如果不存在）
+  db.run(`ALTER TABLE mistake_records ADD COLUMN category TEXT`, () => {});
+  db.run(`ALTER TABLE mistake_records ADD COLUMN scenario TEXT`, () => {});
 
   // 创建行动清单表
   db.run(`

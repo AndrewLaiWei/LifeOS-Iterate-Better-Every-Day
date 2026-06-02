@@ -15,12 +15,12 @@ module.exports = async (req, res) => {
 
     // POST: 保存错题
     if (req.method === 'POST') {
-      const { time, scene, event, mistake, result, raw_text, structured } = req.body;
+      const { time, scene, event, mistake, result, raw_text, structured, category, scenario } = req.body;
 
       const result_db = await db.execute({
-        sql: `INSERT INTO mistake_records (time, scene, event, mistake, result, raw_text, structured)
-              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        args: safeArgs([time, scene, event, mistake, result, raw_text, structured]),
+        sql: `INSERT INTO mistake_records (time, scene, event, mistake, result, raw_text, structured, category, scenario)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: safeArgs([time, scene, event, mistake, result, raw_text, structured, category, scenario]),
       });
 
       const lastInsertId = Number(result_db.lastInsertRowid);

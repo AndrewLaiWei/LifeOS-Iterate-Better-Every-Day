@@ -247,6 +247,33 @@
     border-bottom: 1px solid #2a2a4a;
   }
 
+  /* 分类标签样式 */
+  .category-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    margin-right: 8px;
+    margin-bottom: 6px;
+  }
+  .category-tag.cat-communication { background: #2a3a5a; color: #80a0d0; }
+  .category-tag.cat-decision { background: #3a3a2a; color: #d0b080; }
+  .category-tag.cat-emotion { background: #4a2a3a; color: #d080a0; }
+  .category-tag.cat-knowledge { background: #2a4a3a; color: #80d0a0; }
+  .category-tag.cat-execution { background: #3a2a4a; color: #a080d0; }
+
+  .scenario-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 16px;
+    font-size: 12px;
+    color: #7070a0;
+    border: 1px solid #3a3a5a;
+    margin-right: 6px;
+    margin-bottom: 6px;
+  }
+
   /* 加载动画 */
   .loading {
     display: inline-block;
@@ -627,6 +654,24 @@ async function submitForAnalysis() {
       try {
         const obj = JSON.parse(analyzeData.analysis);
         let html = '';
+
+        // 分类标签 + 场景标签（放在最顶部）
+        if (obj.category || obj.scenario) {
+          html += '<div style="margin-bottom:16px">';
+          if (obj.category) {
+            const catClass = getCategoryClass(obj.category);
+            html += '<span class="category-tag ' + catClass + '">' + escapeHtml(obj.category) + '</span>';
+          }
+          if (obj.scenario) {
+            const scenarios = obj.scenario.split(/[,，、]/);
+            scenarios.forEach(s => {
+              s = s.trim();
+              if (s) html += '<span class="scenario-tag">' + escapeHtml(s) + '</span>';
+            });
+          }
+          html += '</div>';
+        }
+
         html += '<div style="margin-bottom:12px"><strong>事件记录</strong><br>' + escapeHtml(obj.eventRecord || '') + '</div>';
         html += '<div style="margin-bottom:12px"><strong>表面原因</strong><br>' + escapeHtml(obj.surfaceCause || '') + '</div>';
         html += '<div style="margin-bottom:12px"><strong>行为分析</strong><br>' + escapeHtml(obj.behavioralAnalysis || '') + '</div>';
@@ -703,6 +748,18 @@ function resetAll() {
   });
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// 错题类型 → CSS class 映射
+function getCategoryClass(category) {
+  const map = {
+    '沟通失误': 'cat-communication',
+    '决策偏差': 'cat-decision',
+    '情绪失控': 'cat-emotion',
+    '知识盲区': 'cat-knowledge',
+    '执行力问题': 'cat-execution',
+  };
+  return map[category] || 'cat-decision';
 }
 </script>
 

@@ -21,7 +21,9 @@ async function initTable() {
       raw_text TEXT,
       structured TEXT,
       analysis_json TEXT,
-      tags TEXT
+      tags TEXT,
+      category TEXT,
+      scenario TEXT
     )
   `);
   await db.execute(`
@@ -42,6 +44,10 @@ async function initTable() {
       created_at TEXT DEFAULT (datetime('now', 'localtime'))
     )
   `);
+  // V2 迁移：为已有表添加新列（已存在则跳过）
+  try { await db.execute('ALTER TABLE mistake_records ADD COLUMN category TEXT'); } catch(e) {}
+  try { await db.execute('ALTER TABLE mistake_records ADD COLUMN scenario TEXT'); } catch(e) {}
+
   console.log('✅ Turso 表结构已就绪');
 }
 
