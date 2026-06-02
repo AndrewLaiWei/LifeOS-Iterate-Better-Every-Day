@@ -5,10 +5,11 @@ node_modules/
 .env
 api/.env
 
-# Database files (personal data, not shared)
+# Turso local cache
 *.db
 *.db-shm
 *.db-wal
+turso-local*
 
 # IDE and editor files
 .vscode/
