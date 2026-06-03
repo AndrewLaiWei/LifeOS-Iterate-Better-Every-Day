@@ -7,7 +7,9 @@ const db = createClient({
 });
 
 // 初始化表结构（幂等，重复执行不会报错）
+// ⚠️ 列必须与 prism API / server.js 完全对齐
 async function initTable() {
+  // 先尝试创建表（新数据库），包含所有可能用到的列
   await db.execute(`
     CREATE TABLE IF NOT EXISTS mistake_records (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,30 +25,24 @@ async function initTable() {
       analysis_json TEXT,
       tags TEXT,
       category TEXT,
-      scenario TEXT
+      scenario TEXT,
+      analysis_structured TEXT,
+      type TEXT,
+      scene_detail TEXT
     )
   `);
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS action_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      record_id INTEGER,
-      content TEXT NOT NULL,
-      completed INTEGER DEFAULT 0,
-      created_at TEXT DEFAULT (datetime('now', 'localtime')),
-      FOREIGN KEY (record_id) REFERENCES mistake_records(id) ON DELETE CASCADE
-    )
-  `);
-  await db.execute(`
-    CREATE TABLE IF NOT EXISTS week_reviews (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      week_start TEXT NOT NULL,
-      essence TEXT,
-      created_at TEXT DEFAULT (datetime('now', 'localtime'))
-    )
-  `);
-  // V2 迁移：为已有表添加新列（已存在则跳过）
-  try { await db.execute('ALTER TABLE mistake_records ADD COLUMN category TEXT'); } catch(e) {}
-  try { await db.execute('ALTER TABLE mistake_records ADD COLUMN scenario TEXT'); } catch(e) {}
+
+  // 为已有旧表补全新列（已存在则跳过）
+  const migrations = [
+    'ALTER TABLE mistake_records ADD COLUMN category TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN scenario TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN analysis_structured TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN type TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN scene_detail TEXT',
+  ];
+  for (const sql of migrations) {
+    try { await db.execute(sql); } catch(e) {}
+  }
 
   console.log('✅ Turso 表结构已就绪');
 }

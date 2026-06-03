@@ -3,11 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 复盘 - 记录失误，持续进化</title>
+<title>点击按钮，记录失误,AI复盘。</title>
 
 <style>
+  /* 这里是 CSS，负责让网站变好看 */
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* 整个页面背景 */
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #0f0f1a;
@@ -19,230 +21,75 @@
     padding: 24px;
   }
 
+   /* 大标题 */
   h1 {
     font-size: 20px;
     font-weight: 600;
     color: #a0a0c0;
-    margin-bottom: 32px;
+    margin-bottom: 40px;
     letter-spacing: 2px;
   }
 
-  /* 录音小按钮 */
-  .record-btn {
-    width: 48px;
-    height: 48px;
+  /* 录音按钮 */
+  #recordBtn {
+    width: 120px;
+    height: 120px;
     border-radius: 50%;
     border: none;
     background: linear-gradient(135deg, #4a4a6a, #3a3a5a);
     color: #d0d0f0;
-    font-size: 18px;
+    font-size: 48px;
     cursor: pointer;
     transition: all 0.3s;
-    box-shadow: 0 4px 16px rgba(80, 80, 200, 0.2);
+    box-shadow: 0 8px 32px rgba(80, 80, 200, 0.2);
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    position: relative;
   }
-  .record-btn:hover { transform: scale(1.08); }
-  .record-btn:active { transform: scale(0.95); }
-  .record-btn.recording {
+  #recordBtn:hover { transform: scale(1.05); }
+  #recordBtn:active { transform: scale(0.95); }
+
+  #recordBtn.recording {
     background: linear-gradient(135deg, #cc3344, #aa2244);
-    box-shadow: 0 4px 20px rgba(200, 50, 80, 0.5);
-    animation: pulse-sm 1.2s infinite;
+    box-shadow: 0 8px 32px rgba(200, 50, 80, 0.4);
+    animation: pulse 1.5s infinite;
   }
 
-  @keyframes pulse-sm {
-    0%, 100% { box-shadow: 0 4px 20px rgba(200,50,80,0.5); }
-    50% { box-shadow: 0 4px 32px rgba(200,50,80,0.8); }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 8px 32px rgba(200,50,80,0.4); }
+    50% { box-shadow: 0 8px 48px rgba(200,50,80,0.7); }
   }
 
-  /* 状态提示条 */
+  /* 状态文字 */
   #status {
-    margin-top: 16px;
-    font-size: 13px;
-    color: #6060a0;
-    min-height: 20px;
-  }
-
-  /* 引导问题区域 */
-  #guidePanel {
-    margin-top: 16px;
-    width: 100%;
-    max-width: 600px;
-  }
-
-  #guidePanel h2 {
-    font-size: 16px;
-    color: #8080b0;
-    margin-bottom: 8px;
-    font-weight: 600;
-  }
-
-  .guide-hint {
-    font-size: 13px;
-    color: #505070;
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-
-  .guide-question {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    transition: border-color 0.3s;
-  }
-
-  .guide-question.answered {
-    border-color: #2a5a3a;
-  }
-
-  .guide-question-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-
-  .guide-question-num {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    background: #2a2a4a;
-    color: #8080b0;
-    font-size: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .guide-question-text {
-    font-size: 15px;
-    color: #a0a0c0;
-    flex: 1;
-  }
-
-  .guide-question-body {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .guide-answer {
-    flex: 1;
-    min-height: 40px;
-    font-size: 14px;
-    color: #505070;
-    line-height: 1.6;
-    padding: 8px 0;
-    word-break: break-word;
-  }
-
-  .guide-answer.has-text {
-    color: #b0b0d0;
-  }
-
-  .guide-skip-btn {
-    font-size: 12px;
-    color: #505070;
-    cursor: pointer;
-    padding: 4px 10px;
-    border: 1px solid #2a2a3a;
-    border-radius: 6px;
-    background: transparent;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-  .guide-skip-btn:hover {
-    color: #8080a0;
-    border-color: #3a3a5a;
-  }
-  .guide-skip-btn.skipped {
-    color: #505060;
-    text-decoration: line-through;
-  }
-
-  /* AI 整理预览区 */
-  #previewCard {
     margin-top: 24px;
-    width: 100%;
-    background: #161628;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 16px;
-    display: none;
-  }
-  #previewCard.has-content {
-    display: block;
-  }
-  #previewCard .preview-label {
-    font-size: 13px;
-    color: #6060a0;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #2a2a3a;
-  }
-  #previewText {
     font-size: 14px;
-    line-height: 1.8;
-    color: #b0b0d0;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  #previewText.loading-text {
-    color: #505070;
-  }
-  .preview-empty {
-    color: #404060;
-    font-size: 13px;
-  }
-  .preview-loading {
-    color: #505070;
-    font-size: 13px;
+    color: #707090;
+    min-height: 24px;
   }
 
-  /* 再来一条按钮 */
-  #resetBtn {
-    margin-top: 16px;
-    width: 100%;
-    padding: 14px;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    background: transparent;
-    color: #7070a0;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: none;
-  }
-  #resetBtn:hover { border-color: #4a4a6a; color: #a0a0c0; }
-
-  /* AI 分析结果区 */
-  #analysis {
+  /* 文字结果区 */
+  .card {
     margin-top: 32px;
     width: 100%;
     max-width: 600px;
     min-height: 120px;
     background: #1a1a2e;
-    border: 1px solid #2a4a3a;
+    border: 1px solid #2a2a4a;
     border-radius: 12px;
     padding: 20px;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.8;
     color: #d0d0e8;
     white-space: pre-wrap;
     word-break: break-word;
-    display: none;
   }
 
   .card-label {
     font-size: 13px;
     color: #6060a0;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     padding-bottom: 8px;
     border-bottom: 1px solid #2a2a4a;
   }
@@ -274,6 +121,24 @@
     margin-bottom: 6px;
   }
 
+  #result:empty::before {
+    content: "识别结果将显示在这里…";
+    color: #444466;
+  }
+
+  /* AI 分析结果区 */
+  #analysis {
+    background: #1a1a2e;
+    border: 1px solid #2a4a3a;
+  }
+
+  #analysis-content {
+    font-size: 14px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
   /* 加载动画 */
   .loading {
     display: inline-block;
@@ -283,264 +148,162 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
   }
+
+  /* 计时器 */
+  #timer {
+    margin-top: 12px;
+    font-size: 14px;
+    color: #6060a0;
+    font-variant-numeric: tabular-nums;
+    display: none;
+  }
 </style>
 </head>
 <body>
 
-<h1>AI 复盘</h1>
-
-<!-- 5个引导问题，页面打开直接显示 -->
-<div id="guidePanel">
-  <h2>记录一次失误</h2>
-  <div class="guide-hint">每个问题都可以用语音回答，或点击「跳过」。回答越详细，AI 分析越精准。</div>
-
-  <div class="guide-question" id="q1" data-key="event">
-    <div class="guide-question-header">
-      <div class="guide-question-num">1</div>
-      <div class="guide-question-text">发生了什么事？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-event">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="event" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('event')">跳过</button>
-    </div>
+<!-- NAV -->
+<nav style="position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 32px;display:flex;align-items:center;justify-content:space-between;background:rgba(10,10,10,0.88);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.06);">
+  <a href="index.html" style="font-size:16px;font-weight:600;color:#fff;text-decoration:none;">Life<span style="color:#7F77DD;">OS</span></a>
+  <div style="display:flex;gap:24px;">
+    <a href="index.html" style="font-size:13px;color:rgba(255,255,255,0.6);text-decoration:none;">首页</a>
+    <a href="voice-to-text.html" style="font-size:13px;color:rgba(255,255,255,0.9);text-decoration:none;">开始体验</a>
+    <a href="prism.html" style="font-size:13px;color:rgba(255,255,255,0.6);text-decoration:none;">复盘棱镜</a>
   </div>
+</nav>
 
-  <div class="guide-question" id="q2" data-key="action">
-    <div class="guide-question-header">
-      <div class="guide-question-num">2</div>
-      <div class="guide-question-text">当时做了什么？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-action">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="action" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('action')">跳过</button>
-    </div>
-  </div>
+<div style="height:72px;"></div>
+<h1 style="margin-top:8px;">🎙 语音转文字 · AI 复盘</h1>
 
-  <div class="guide-question" id="q3" data-key="thought">
-    <div class="guide-question-header">
-      <div class="guide-question-num">3</div>
-      <div class="guide-question-text">你当时是怎么想的？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-thought">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="thought" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('thought')">跳过</button>
-    </div>
-  </div>
-
-  <div class="guide-question" id="q4" data-key="consequence">
-    <div class="guide-question-header">
-      <div class="guide-question-num">4</div>
-      <div class="guide-question-text">导致了什么后果？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-consequence">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="consequence" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('consequence')">跳过</button>
-    </div>
-  </div>
-
-  <div class="guide-question" id="q5" data-key="plan">
-    <div class="guide-question-header">
-      <div class="guide-question-num">5</div>
-      <div class="guide-question-text">以后打算怎么做？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-plan">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="plan" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('plan')">跳过</button>
-    </div>
-  </div>
-
-  <!-- AI 整理后的记录预览 -->
-  <div id="previewCard">
-    <div class="preview-label">AI 整理后的记录</div>
-    <div id="previewContent"><div class="preview-empty">回答问题后，AI 会自动整理语音记录并在这里显示</div></div>
-  </div>
-
-  <button id="analyzeBtn" onclick="submitForAnalysis()" style="display:none;margin-top:24px;width:100%;padding:16px;border:none;border-radius:12px;background:linear-gradient(135deg,#3a6a4a,#2a5a3a);color:#d0f0d0;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.3s;letter-spacing:1px;">确认，开始深度分析</button>
-  <button id="resetBtn" onclick="resetAll()">再来一条</button>
-</div>
-
-<div id="analysis">
-  <div class="card-label">AI 分析结果</div>
+<button id="recordBtn" title="点击开始录音">🎙</button>
+<div id="timer"></div>
+<div id="status">点击按钮开始录音</div>
+<div id="result" class="card"></div>
+<div id="analysis" class="card" style="display:none">
+  <div class="card-label">🤖 AI 分析</div>
   <div id="analysis-content"></div>
 </div>
 
-<div id="status"></div>
-
 <script>
-// ===== 全局状态 =====
 let isRecording = false;
-let recordingTarget = null; // 'event' / 'action' / 'thought' / 'consequence' / 'plan'
 let recognition = null;
+let timerInterval = null;
+let seconds = 0;
 let finalTranscript = '';
-let guideAnswers = {};     // { event: '...', action: '...', ... }
-let guideSkipped = {};     // 记录哪些问题被跳过
-let cleanedText = '';      // AI 整理后的干净文字
-let cleanupTimer = null; // 自动整理防抖定时器
-const CLEANUP_DELAY = 1500; // 回答结束后1.5秒自动触发整理
 
+const btn = document.getElementById('recordBtn');
 const status = document.getElementById('status');
+const result = document.getElementById('result');
+const timerEl = document.getElementById('timer');
 const analysisDiv = document.getElementById('analysis');
 const analysisContent = document.getElementById('analysis-content');
-const guidePanel = document.getElementById('guidePanel');
 
 // ===== 检查浏览器支持 =====
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SpeechRecognition) {
-  status.textContent = '当前浏览器不支持语音识别，请使用 Chrome 或 Edge';
-  document.querySelectorAll('.guide-rec-btn').forEach(b => b.disabled = true);
+  status.textContent = '❌ 当前浏览器不支持语音识别，请使用 Chrome 或 Edge';
+  btn.disabled = true;
 }
 
 // ===== 初始化语音识别 =====
 function initRecognition() {
   recognition = new SpeechRecognition();
-  recognition.lang = 'zh-CN';
-  recognition.interimResults = true;
-  recognition.continuous = true;
+  recognition.lang = 'zh-CN';       // 中文识别
+  recognition.interimResults = true;   // 实时显示中间结果
+  recognition.continuous = true;      // 持续识别
   recognition.maxAlternatives = 1;
 
   recognition.onstart = () => {
-    const answerEl = document.getElementById('answer-' + recordingTarget);
-    answerEl.textContent = '正在录音…';
-    answerEl.classList.add('has-text');
-    answerEl.style.color = '#cc5566';
+    status.textContent = '🎙 正在录音，请说话…';
+    timerEl.style.display = 'block';
+    startTimer();
   };
 
   recognition.onresult = (event) => {
+    let finalText = finalTranscript;
     let interimText = '';
-    for (let i = event.resultIndex; i < event.results.length; i++) {
+    for (
+      let i = event.resultIndex;
+      i < event.results.length;
+      i++
+    ){
       const text = event.results[i][0].transcript;
       if (event.results[i].isFinal) {
+        finalText += text;
         finalTranscript += text;
       } else {
         interimText += text;
       }
     }
-
-    const answerEl = document.getElementById('answer-' + recordingTarget);
-    answerEl.innerHTML = escapeHtml(finalTranscript) +
-      (interimText ? '<span style="color:#555577">' + escapeHtml(interimText) + '</span>' : '');
-    answerEl.style.color = '#b0b0d0';
+    // 显示：最终结果 + 灰色中间结果
+    result.innerHTML = escapeHtml(finalText) +
+      (interimText ? `<span style="color:#555577">${escapeHtml(interimText)}</span>` : '');
   };
 
   recognition.onerror = (event) => {
     console.error('语音识别错误:', event.error);
     if (event.error === 'not-allowed') {
-      status.textContent = '请允许浏览器使用麦克风权限';
+      status.textContent = '❌ 请允许浏览器使用麦克风权限';
     } else if (event.error === 'no-speech') {
-      // 静默处理
+      status.textContent = '🎙 未检测到语音，请继续说话…';
     } else if (event.error === 'network') {
-      status.textContent = '网络错误，请检查网络连接';
-    }
-  };
-
-  recognition.onend = () => {
-    if (!isRecording) {
-      // 录音停止 → 保存答案
-      const text = finalTranscript.trim();
-      if (text) {
-        guideAnswers[recordingTarget] = text;
-        const answerEl = document.getElementById('answer-' + recordingTarget);
-        answerEl.textContent = text;
-        answerEl.classList.add('has-text');
-        document.getElementById('q' + getQuestionNum(recordingTarget)).classList.add('answered');
-      }
-      resetGuideBtn(recordingTarget);
-      // 自动触发 AI 整理
-      triggerAutoCleanup();
+      status.textContent = '❌ 网络错误，请检查网络连接';
     } else {
-      // 录音中自动断开，重新启动
-      try { recognition.start(); } catch(e) {}
+      status.textContent = '⚠️ 识别错误：' + event.error;
     }
   };
-}
 
-// 根据问题 key 获取序号
-function getQuestionNum(key) {
-  const map = { event: 1, action: 2, thought: 3, consequence: 4, plan: 5 };
-  return map[key] || 1;
-}
+recognition.onend = async () => {
 
-// ===== 自动触发 AI 整理（debounce）=====
-function triggerAutoCleanup() {
-  // 至少有一个回答才触发
-  const hasAnswers = Object.keys(guideAnswers).length > 0;
-  if (!hasAnswers) return;
+  if (isRecording) {
 
-  // 清除旧定时器
-  if (cleanupTimer) clearTimeout(cleanupTimer);
+    setTimeout(() => {
 
-  // 1.5秒后自动触发
-  cleanupTimer = setTimeout(() => {
-    doCleanup();
-  }, CLEANUP_DELAY);
-}
+      try {
+        recognition.start();
+      } catch (e) {
+        console.warn(e);
+      }
 
-// ===== AI 整理语音记录（自动调用）=====
-async function doCleanup() {
-  const analyzeBtn = document.getElementById('analyzeBtn');
-  const previewCard = document.getElementById('previewCard');
-  const previewContent = document.getElementById('previewContent');
+    }, 500);
 
-  previewCard.classList.add('has-content');
-  previewContent.innerHTML = '<div class="preview-loading">AI 正在整理语音记录…</div>';
-  status.textContent = 'AI 正在整理语音记录…';
+    return;
+  }
 
-  try {
-    const res = await fetch('/api/cleanup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ answers: guideAnswers }),
-    });
+  result.textContent = finalTranscript;
 
-    if (!res.ok) {
-      const errText = await res.text();
-      throw new Error(errText);
+  if (pendingAnalyze) {
+
+    pendingAnalyze = false;
+
+    if (finalTranscript.trim()) {
+
+      await saveAndAnalyze(
+        finalTranscript
+      );
+
+    } else {
+
+      status.textContent =
+        '⚠️ 没有识别到文字';
     }
-
-    const data = await res.json();
-    cleanedText = data.cleaned || '';
-
-    previewContent.innerHTML = '<div id="previewText">' + escapeHtml(cleanedText) + '</div>';
-    previewCard.style.borderColor = '#3a5a5a';
-    status.textContent = '记录已整理，可点击绿色按钮开始分析';
-
-    // 显示绿色分析按钮
-    analyzeBtn.style.display = 'block';
-
-  } catch (err) {
-    previewContent.innerHTML = '<div class="preview-loading" style="color:#cc5566">整理失败，可直接点击绿色按钮分析</div>';
-    status.textContent = '整理失败，可直接分析';
-    // 整理失败也允许分析
-    analyzeBtn.style.display = 'block';
   }
+};
+
+function startTimer() {
+  seconds = 0;
+  updateTimer();
+  timerInterval = setInterval(() => { seconds++; updateTimer(); }, 1000);
 }
 
-// 跳过某个问题
-function skipQuestion(key) {
-  guideSkipped[key] = true;
-  const answerEl = document.getElementById('answer-' + key);
-  answerEl.textContent = '已跳过';
-  answerEl.style.color = '#404050';
-  const skipBtn = answerEl.nextElementSibling.nextElementSibling;
-  if (skipBtn) {
-    skipBtn.classList.add('skipped');
-    skipBtn.textContent = '已跳过';
-  }
-  // 自动触发 AI 整理
-  triggerAutoCleanup();
+function updateTimer() {
+  const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+  const s = String(seconds % 60).padStart(2, '0');
+  timerEl.textContent = m + ':' + s;
 }
 
-// 重置引导问题录音按钮
-function resetGuideBtn(key) {
-  const questionEl = document.getElementById('q' + getQuestionNum(key));
-  const recBtn = questionEl.querySelector('.guide-rec-btn');
-  recBtn.classList.remove('recording');
-  recBtn.textContent = '🎙';
+function stopTimer() {
+  clearInterval(timerInterval);
+  timerEl.style.display = 'none';
 }
 
 function escapeHtml(str) {
@@ -549,170 +312,136 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ===== 引导问题录音按钮点击 =====
-document.querySelectorAll('.guide-rec-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const key = btn.getAttribute('data-key');
-
-    if (btn.classList.contains('recording')) {
-      // 正在录音 → 停止
-      isRecording = false;
-      btn.classList.remove('recording');
-      btn.textContent = '🎙';
-      try { recognition.stop(); } catch(e) {}
-    } else {
-      // 先停掉其他正在录音的按钮
-      document.querySelectorAll('.guide-rec-btn.recording').forEach(otherBtn => {
-        isRecording = false;
-        otherBtn.classList.remove('recording');
-        otherBtn.textContent = '🎙';
-      });
-
-      // 开始录音
-      if (!recognition) initRecognition();
-
-      isRecording = true;
-      recordingTarget = key;
-      btn.classList.add('recording');
-      btn.textContent = '⏹';
-      finalTranscript = '';
-
-      // 取消跳过状态
-      delete guideSkipped[key];
-      const answerEl = document.getElementById('answer-' + key);
-      answerEl.textContent = '点击开始说话…';
-      answerEl.style.color = '#cc5566';
-      const skipBtn = answerEl.nextElementSibling.nextElementSibling;
-      if (skipBtn) {
-        skipBtn.classList.remove('skipped');
-        skipBtn.textContent = '跳过';
-      }
-
-      try {
-        recognition.start();
-      } catch(e) {
-        console.warn('recognition.start() 异常:', e);
-      }
-    }
-  });
+// ===== 按钮点击 =====
+btn.addEventListener('click', () => {
+  if (!isRecording) {
+    startRecording();
+  } else {
+    stopRecording();
+  }
 });
 
-// ===== 第2步：确认，开始深度分析 =====
-async function submitForAnalysis() {
-  status.textContent = '正在保存并发送给 AI 深度分析…';
-  analysisDiv.style.display = 'block';
-  analysisContent.innerHTML = '<span class="loading">AI 正在深度分析中…</span>';
+function startRecording() {
+  if (!recognition) initRecognition();
 
-  const analyzeBtn = document.getElementById('analyzeBtn');
-  analyzeBtn.disabled = true;
-  analyzeBtn.textContent = '深度分析中…';
-
-  // 优先用 AI 整理后的文字，没有就用原始拼接
-  const rawText = cleanedText || Object.entries(guideAnswers).map(([k, v]) => v).join('\n');
+  isRecording = true;
+  btn.classList.add('recording');
+  btn.textContent = '⏹';
+  result.textContent = '';
+  finalTranscript = '';
+  analysisDiv.style.display = 'none';
 
   try {
-    // 第 1 步：保存到数据库（同时存原始+整理后的）
+    recognition.start();
+  } catch(e) {
+    console.warn('recognition.start() 异常:', e);
+  }
+}
+
+function stopRecording() {
+  isRecording = false;
+  btn.classList.remove('recording');
+  btn.textContent = '🎙';
+  stopTimer();
+
+  if (finalTranscript) {
+    result.textContent = finalTranscript;
+    // 自动保存 + AI 分析
+    saveAndAnalyze(finalTranscript);
+  } else {
+    status.textContent = '⚠️ 没有识别到文字';
+  }
+
+  try { recognition.stop(); } catch(e) {}
+}
+
+// ===== 自动保存到服务器 + 调 AI 分析 =====
+async function saveAndAnalyze(text) {
+  status.textContent = '⏳ 正在保存并发送给 AI 分析…';
+  analysisDiv.style.display = 'block';
+  analysisContent.innerHTML = '<span class="loading">🤖 AI 正在思考中…</span>';
+
+  try {
+    // 第 1 步：保存错题到数据库
     const saveRes = await fetch('/api/mistakes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         time: new Date().toLocaleString('zh-CN'),
-        raw_text: rawText,
-        structured: JSON.stringify(guideAnswers),
+        raw_text: text,
       }),
     });
+   if (!saveRes.ok) {
 
-    if (!saveRes.ok) {
-      const errText = await saveRes.text();
-      throw new Error('保存失败(' + saveRes.status + '): ' + errText);
-    }
+  throw new Error(
+    `保存失败: ${saveRes.status}`
+  );
+}
 
-    const saveData = await saveRes.json();
-    if (!saveData.id) {
-      throw new Error('保存成功但未返回ID');
-    }
+const saveData =
+  await saveRes.json();
 
-    // 第 2 步：调 AI 深度分析（用整理后的文字）
+    // 第 2 步：调 AI 分析
     const analyzeRes = await fetch('/api/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         id: saveData.id,
-        raw_text: rawText,
+        raw_text: text,
       }),
     });
-
-    if (!analyzeRes.ok) {
-      const errText = await analyzeRes.text();
-      throw new Error('AI分析失败(' + analyzeRes.status + '): ' + errText);
-    }
-
     const analyzeData = await analyzeRes.json();
 
-    // 显示分析结果
-    if (analyzeData.analysis) {
-      try {
-        const obj = JSON.parse(analyzeData.analysis);
-        let html = '';
+        // 显示分析结果
+        if (analyzeData.analysis) {
+          try {
+            const obj = JSON.parse(analyzeData.analysis);
+            let html = '';
 
-        // 分类标签 + 场景标签（放在最顶部）
-        if (obj.category || obj.scenario) {
-          html += '<div style="margin-bottom:16px">';
-          if (obj.category) {
-            const catClass = getCategoryClass(obj.category);
-            html += '<span class="category-tag ' + catClass + '">' + escapeHtml(obj.category) + '</span>';
-          }
-          if (obj.scenario) {
-            const scenarios = obj.scenario.split(/[,，、]/);
-            scenarios.forEach(s => {
-              s = s.trim();
-              if (s) html += '<span class="scenario-tag">' + escapeHtml(s) + '</span>';
-            });
-          }
-          html += '</div>';
-        }
+            // 分类标签 + 场景标签（放在最顶部）
+            if (obj.category || obj.scenario) {
+              html += '<div style="margin-bottom:16px">';
+              if (obj.category) {
+                const catClass = getCategoryClass(obj.category);
+                html += '<span class="category-tag ' + catClass + '">' + escapeHtml(obj.category) + '</span>';
+              }
+              if (obj.scenario) {
+                const scenarios = obj.scenario.split(/[,，、]/);
+                scenarios.forEach(s => {
+                  s = s.trim();
+                  if (s) html += '<span class="scenario-tag">' + escapeHtml(s) + '</span>';
+                });
+              }
+              html += '</div>';
+            }
 
-        html += '<div style="margin-bottom:12px"><strong>事件记录</strong><br>' + escapeHtml(obj.eventRecord || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>表面原因</strong><br>' + escapeHtml(obj.surfaceCause || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>行为分析</strong><br>' + escapeHtml(obj.behavioralAnalysis || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>深层原因</strong><br>' + escapeHtml(obj.deepCause || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>认知偏差</strong><br>' + escapeHtml(obj.cognitiveBias || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>改进建议</strong><ul style="margin:4px 0 0 16px">';
-        (obj.improvementSuggestions || []).forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
-        html += '</ul></div>';
-        html += '<div style="margin-bottom:12px"><strong>行动清单</strong><ul style="margin:4px 0 0 16px">';
-        (obj.actionChecklist || []).forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
-        html += '</ul></div>';
-        html += '<div><strong>长期价值</strong><br>' + escapeHtml(obj.longTermValue || '') + '</div>';
-        analysisContent.innerHTML = html;
-        status.textContent = '分析完成';
-      } catch (e) {
-        analysisContent.textContent = analyzeData.analysis;
-        status.textContent = '分析完成';
-      }
+            html += '<div style="margin-bottom:12px"><strong>事件记录</strong><br>' + escapeHtml(obj.eventRecord || '') + '</div>';
+            html += '<div style="margin-bottom:12px"><strong>表面原因</strong><br>' + escapeHtml(obj.surfaceCause || '') + '</div>';
+            html += '<div style="margin-bottom:12px"><strong>行为分析</strong><br>' + escapeHtml(obj.behavioralAnalysis || '') + '</div>';
+            html += '<div style="margin-bottom:12px"><strong>深层原因</strong><br>' + escapeHtml(obj.deepCause || '') + '</div>';
+            html += '<div style="margin-bottom:12px"><strong>认知偏差</strong><br>' + escapeHtml(obj.cognitiveBias || '') + '</div>';
+            html += '<div style="margin-bottom:12px"><strong>改进建议</strong><ul style="margin:4px 0 0 16px">';
+            (obj.improvementSuggestions || []).forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
+            html += '</ul></div>';
+            html += '<div style="margin-bottom:12px"><strong>行动清单</strong><ul style="margin:4px 0 0 16px">';
+            (obj.actionChecklist || []).forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
+            html += '</ul></div>';
+            html += '<div><strong>长期价值</strong><br>' + escapeHtml(obj.longTermValue || '') + '</div>';
+            analysisContent.innerHTML = html;
+            status.textContent = '分析完成';
+          } catch (e) {
+            analysisContent.textContent = analyzeData.analysis;
+            status.textContent = '分析完成';
+          }
     } else if (analyzeData.error) {
       analysisContent.textContent = 'AI 分析失败：' + analyzeData.error;
       status.textContent = '分析失败';
     } else {
-      analysisContent.textContent = 'AI 暂无返回内容';
-      status.textContent = '分析完成，但无返回';
-    }
-
-    // 显示"再来一条"按钮
-    document.getElementById('resetBtn').style.display = 'block';
-    // 隐藏问题和分析按钮
-    guidePanel.style.display = 'none';
-    analysisDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  } catch (err) {
-    console.error('保存/分析失败:', err);
-    analysisContent.textContent = '请求失败：' + err.message;
-    status.textContent = '请求失败';
-  } finally {
-    analyzeBtn.disabled = false;
-    analyzeBtn.textContent = '确认，开始深度分析';
+    analysisContent.textContent = '❌ 请求失败，请检查服务器是否启动';
+    status.textContent = '❌ 请求失败';
   }
 }
+<<<<<<< HEAD
 
 // ===== 再来一条：重置所有状态 =====
 function resetAll() {
@@ -761,6 +490,8 @@ function getCategoryClass(category) {
   };
   return map[category] || 'cat-decision';
 }
+=======
+>>>>>>> 020fc97aa12ccbbc7a2881be1cd36c134098ee9c
 </script>
 
 </body>
