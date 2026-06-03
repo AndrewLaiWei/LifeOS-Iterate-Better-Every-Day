@@ -8,12 +8,7 @@
     "init-db": "node db/init-db.js",
     "dev": "node --watch server.js"
   },
-  "keywords": [
-    "lifeos",
-    "mistakes",
-    "ai",
-    "self-improvement"
-  ],
+  "keywords": ["lifeos", "mistakes", "ai", "self-improvement"],
   "author": "Andrew Lai Wei",
   "license": "MIT",
   "dependencies": {
