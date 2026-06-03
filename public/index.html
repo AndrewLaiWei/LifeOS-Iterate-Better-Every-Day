@@ -311,6 +311,53 @@
   }
   .simulate-btn:hover { background: var(--purple-400); }
 
+  .feature-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 64px; }
+  .feature-card {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 32px; position: relative; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .feature-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    border-radius: 20px 20px 0 0;
+  }
+  .feature-card.purple::before { background: var(--purple-600); }
+  .feature-card.teal::before { background: var(--teal-600); }
+  .feature-card.amber::before { background: var(--amber-600); }
+  .feature-card.blue::before { background: var(--blue-600); }
+  .feature-card:hover { border-color: rgba(255,255,255,0.16); }
+  .feature-card-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; margin-bottom: 20px;
+  }
+  .feature-card-icon.purple { background: rgba(83,74,183,0.15); }
+  .feature-card-icon.teal { background: rgba(29,158,117,0.15); }
+  .feature-card-icon.amber { background: rgba(186,117,23,0.15); }
+  .feature-card-icon.blue { background: rgba(55,138,221,0.15); }
+  .feature-card-title { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+  .feature-card-desc { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.7; margin-bottom: 16px; }
+  .feature-card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .feature-card-tag {
+    font-size: 11px; padding: 3px 9px; border-radius: 5px;
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5);
+  }
+  .profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+  .profile-col { }
+  .profile-col-title {
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .profile-col-title.strength { color: var(--teal-400); }
+  .profile-col-title.weakness { color: var(--coral-400); }
+  .profile-item {
+    font-size: 13px; color: rgba(255,255,255,0.65); padding: 6px 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .profile-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .profile-dot.green { background: var(--teal-400); }
+  .profile-dot.red { background: var(--coral-400); }
+
   /* ── ROADMAP ── */
   .roadmap { background: #0d0d0d; }
   .roadmap-timeline { margin-top: 64px; position: relative; }
@@ -429,10 +476,10 @@
 
 <!-- NAV -->
 <nav>
-  <div class="nav-logo">人生<span>错题本</span></div>
+  <div class="nav-logo">Life<span>OS</span></div>
   <div class="nav-links">
-    <a href="#how">使用方式</a>
-    <a href="#parallel">平行人生</a>
+    <a href="voice-to-text.html">开始体验</a>
+    <a href="prism.html">复盘棱镜</a>
     <a href="#roadmap">路线图</a>
     <a href="#vision">愿景</a>
   </div>
@@ -449,8 +496,8 @@
   </h1>
   <p class="hero-quote">"聪明人从自己的错误中学习，智慧者从别人的错误中学习。<br>我们造出了第一台帮你同时做到两件事的机器。"</p>
   <div class="hero-actions">
-    <a href="voice-to-text.html">开始体验 →</a>
-    <a href="#how" class="btn-ghost">了解如何运作</a>
+    <a href="voice-to-text.html" class="btn-ghost">开始体验 →</a>
+    <a href="#roadmap" class="btn-ghost">了解如何运作</a>
   </div>
   <div class="hero-stats">
     <div class="hero-stat">
@@ -464,50 +511,6 @@
     <div class="hero-stat">
       <div class="hero-stat-num">∞</div>
       <div class="hero-stat-label">平行人生预演</div>
-    </div>
-  </div>
-</section>
-
-<!-- MISSION -->
-<section class="mission" id="how">
-  <div class="section-inner">
-    <div class="section-label">核心洞察</div>
-    <h2 class="section-title fade-in">你不是不够努力，<br>只是没有系统</h2>
-    <div class="mission-grid">
-      <div class="mission-text fade-in">
-        <p>人类从错误中学习的速度<strong>太慢</strong>——同一个坑，一生能掉进去数十次。原因不是你不聪明，而是没有一个系统帮你记录、归类、复盘、预演。</p>
-        <p>如果把每一天的小错误当成"<strong>错题</strong>"，用AI生成结构化分析和改进方案，你的人生迭代速度将提升10倍。</p>
-        <p>再加上"<strong>平行人生</strong>"模拟引擎，在重大决策前，AI会基于你的历史错题数据，模拟出不同选择下的可能路径——这不是算命，而是<strong>数据驱动的反事实推演</strong>。</p>
-      </div>
-      <div class="mission-insight fade-in">
-        <div class="mission-insight-title">你的大脑 vs 人生错题本</div>
-        <ul class="mission-insight-list">
-          <li>
-            <div class="list-icon">✗</div>
-            大脑遗忘曲线：72小时后，你只记得30%的细节
-          </li>
-          <li>
-            <div class="list-icon">✓</div>
-            错题本：每一次挫折都被永久结构化存储
-          </li>
-          <li>
-            <div class="list-icon">✗</div>
-            传统复盘：90%的人写日记3天就放弃
-          </li>
-          <li>
-            <div class="list-icon">✓</div>
-            语音一键记录：3秒完成，AI自动生成分析
-          </li>
-          <li>
-            <div class="list-icon">✗</div>
-            做决策：凭感觉、凭直觉、事后后悔
-          </li>
-          <li>
-            <div class="list-icon">✓</div>
-            平行人生模拟：基于你的错题历史，预见决策后果
-          </li>
-        </ul>
-      </div>
     </div>
   </div>
 </section>
@@ -575,95 +578,58 @@
   </div>
 </section>
 
-<!-- AI ANALYSIS DEMO -->
-<section class="demo-section">
+<!-- FEATURES -->
+<section class="features-section">
   <div class="section-inner">
-    <div class="section-label">AI 错题分析</div>
-    <h2 class="section-title fade-in">一条错误，<br>三重洞察</h2>
-    <p class="section-sub fade-in">AI不只是记录，而是帮你从每一次跌倒中提取最大价值。</p>
-    <div class="demo-grid">
-      <div class="demo-card purple fade-in">
-        <div class="demo-card-num">01 · 原始记录</div>
-        <div class="demo-card-tag purple">职场 · 沟通 · 压力</div>
-        <div class="demo-card-title">汇报数据说错了</div>
-        <div class="demo-card-content">"今天跟领导汇报，把Q3的增长数据说成了Q2的。领导当场指出来，很尴尬。会后他私信了我说要注意细节……"</div>
-      </div>
-      <div class="demo-card teal fade-in" style="animation-delay:0.1s">
-        <div class="demo-card-num">02 · 根本原因</div>
-        <div class="demo-card-tag teal">AI 深度分析</div>
-        <div class="demo-card-title">不是粗心，是准备系统的缺失</div>
-        <div class="demo-card-content">这是你本季度第3次出现"数据混淆"类错误，均发生在高压汇报场景下。根因不是粗心，而是你没有建立"汇报前数据锁定"的标准动作。压力触发了认知捷径，跳过了验证环节。</div>
-      </div>
-      <div class="demo-card amber fade-in" style="animation-delay:0.2s">
-        <div class="demo-card-num">03 · 行动方案</div>
-        <div class="demo-card-tag amber">下次行动清单</div>
-        <div class="demo-card-title">三步防止重蹈覆辙</div>
-        <div class="demo-card-content">① 汇报前30分钟打印数据并手动标注时间范围<br>② 高压场景启用"慢呼吸"3次再开口<br>③ 每季度末建立"关键数据备忘卡"<br><br>预计此类错误将在4周内减少80%。</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- PARALLEL LIVES -->
-<section class="parallel" id="parallel">
-  <div class="section-inner">
-    <div class="parallel-hero fade-in">
-      <div class="section-label">第三季解锁</div>
-      <h2 class="section-title">平行人生模拟器</h2>
-      <p class="section-sub" style="margin:0 auto;text-align:center;">在做重大决策前，AI基于你的历史错题数据，模拟出不同选择下的可能人生路径。不是算命，是数据驱动的反事实推演。</p>
-    </div>
-
-    <div class="parallel-decision fade-in">
-      <div class="parallel-decision-title">输入你的决策场景，让AI预演平行人生</div>
-      <textarea class="parallel-decision-input" placeholder="例如：方案A：接受新公司offer，薪资+50%，但通勤每天2小时。方案B：留在原公司，申请转岗到产品部门……"></textarea>
-      <button class="simulate-btn" onclick="handleSimulate()">开始模拟平行人生 →</button>
-    </div>
-
-    <div class="parallel-container" style="margin-top:32px">
-      <div class="parallel-option a fade-in">
-        <div class="parallel-option-tag tag-a">方案 A · 跳槽</div>
-        <div class="parallel-option-title">薪资+50%，通勤2小时</div>
-        <div class="parallel-option-scenario">基于你的历史数据：你曾在3次"长通勤+高压项目"组合中出现持续性睡眠不足，进而引发连锁决策失误……</div>
-        <div class="parallel-prediction">
-          <div class="parallel-prediction-label">AI 预测你最可能犯的错误</div>
-          <div class="prediction-item">
-            <div class="prediction-dot warn"></div>
-            <div class="prediction-text">第3个月因通勤疲劳导致工作效率下滑，重蹈"精力透支"类错误</div>
-          </div>
-          <div class="prediction-item">
-            <div class="prediction-dot warn"></div>
-            <div class="prediction-text">新环境适应期你惯于过度承诺，可能因边界不清引发冲突</div>
-          </div>
-          <div class="prediction-item">
-            <div class="prediction-dot ok"></div>
-            <div class="prediction-text">薪资提升将缓解你历史上"财务焦虑→冒险决策"的模式</div>
-          </div>
+    <div class="section-label">核心功能</div>
+    <h2 class="section-title fade-in">四大学生长引擎</h2>
+    <p class="section-sub fade-in">从记录到洞察，从数据到成长，每一环都用 AI 深度驱动。</p>
+    <div class="feature-grid">
+      <div class="feature-card purple fade-in">
+        <div class="feature-card-icon purple">🃏</div>
+        <div class="feature-card-title">错题卡片</div>
+        <div class="feature-card-desc">每条错题包含原始语音、AI 生成的"根本原因分析"、"改进建议"、"下次行动清单"，结构化沉淀每一次跌倒的价值。</div>
+        <div class="feature-card-tags">
+          <span class="feature-card-tag">语音记录</span>
+          <span class="feature-card-tag">AI 分析</span>
+          <span class="feature-card-tag">行动清单</span>
         </div>
       </div>
-
-      <div class="parallel-divider">
-        <div class="parallel-divider-line"></div>
-        <div class="parallel-divider-label">VS</div>
-        <div class="parallel-divider-line"></div>
+      <div class="feature-card teal fade-in" style="animation-delay:0.1s">
+        <div class="feature-card-icon teal">🗺️</div>
+        <div class="feature-card-title">错题热力图</div>
+        <div class="feature-card-desc">可视化展示你在哪些场景下犯错最频繁——"周一下午开会时"或"与强势同事沟通时"，让隐藏规律无所遁形。</div>
+        <div class="feature-card-tags">
+          <span class="feature-card-tag">场景分析</span>
+          <span class="feature-card-tag">热力图</span>
+          <span class="feature-card-tag">规律发现</span>
+        </div>
       </div>
-
-      <div class="parallel-option b fade-in">
-        <div class="parallel-option-tag tag-b">方案 B · 转岗</div>
-        <div class="parallel-option-title">留原公司，转产品岗</div>
-        <div class="parallel-option-scenario">基于你的历史数据：你过去2次"横向转岗"都经历了6个月以上的适应期，期间错误率是平时的1.8倍……</div>
-        <div class="parallel-prediction">
-          <div class="parallel-prediction-label">AI 预测你最可能犯的错误</div>
-          <div class="prediction-item">
-            <div class="prediction-dot warn"></div>
-            <div class="prediction-text">跨岗前6个月你容易陷入"能力恐慌"，导致过度工作</div>
+      <div class="feature-card amber fade-in" style="animation-delay:0.2s">
+        <div class="feature-card-icon amber">📈</div>
+        <div class="feature-card-title">成长曲线</div>
+        <div class="feature-card-desc">同一类错题的重复率下降趋势，让你肉眼看到进化。数据不会说谎，进步可以被计算。</div>
+        <div class="feature-card-tags">
+          <span class="feature-card-tag">重复率</span>
+          <span class="feature-card-tag">趋势图</span>
+          <span class="feature-card-tag">进步可视化</span>
+        </div>
+      </div>
+      <div class="feature-card blue fade-in" style="animation-delay:0.3s">
+        <div class="feature-card-icon blue">🧠</div>
+        <div class="feature-card-title">用户成长画像</div>
+        <div class="feature-card-desc">基于你的错题历史，AI 生成个人成长画像，清晰呈现优势与弱项，让自我认知从模糊变精确。</div>
+        <div class="profile-grid">
+          <div class="profile-col">
+            <div class="profile-col-title strength">优势</div>
+            <div class="profile-item"><div class="profile-dot green"></div>学习能力</div>
+            <div class="profile-item"><div class="profile-dot green"></div>执行能力</div>
           </div>
-          <div class="prediction-item">
-            <div class="prediction-dot ok"></div>
-            <div class="prediction-text">环境熟悉度高，人际资本保留，减少你"新环境社交焦虑"类错误</div>
-          </div>
-          <div class="prediction-item">
-            <div class="prediction-dot ok"></div>
-            <div class="prediction-text">产品岗与你历史强项（系统化思考）高度匹配，长期成长曲线更好</div>
+          <div class="profile-col">
+            <div class="profile-col-title weakness">弱项</div>
+            <div class="profile-item"><div class="profile-dot red"></div>沟通能力</div>
+            <div class="profile-item"><div class="profile-dot red"></div>情绪管理</div>
+            <div class="profile-item"><div class="profile-dot red"></div>战略规划</div>
           </div>
         </div>
       </div>
@@ -750,7 +716,7 @@
     <h2 class="cta-title fade-in">开始你的<br>人生迭代</h2>
     <p class="cta-sub fade-in">每天60秒，让AI帮你从错误中迭代。无需等待，立刻开始记录。</p>
     <div class="cta-btn-wrap fade-in">
-      <a href="voice-to-text.html">🎙️ 开始记录 →</a>
+      <a href="voice-to-text.html" class="cta-btn">🎙️ 开始记录 →</a>
     </div>
     <div class="cta-hint">完全免费 · 无需注册 · 数据本地存储</div>
   </div>
@@ -760,13 +726,11 @@
 <footer>
   <div class="footer-grid">
     <div>
-      <div class="footer-brand">人生<span>错题本</span></div>
-      <div class="footer-tagline">你不需要完美，你只需要一本错题本。<br>每天60秒，与AI一起迭代人生。</div>
+      <div class="footer-brand">Life<span>OS</span></div>
+      <div class="footer-tagline">你不需要完美，你只需要 LifeOS。<br>每天60秒，与AI一起迭代人生。</div>
     </div>
     <div>
       <div class="footer-col-title">产品</div>
-      <a href="#how" class="footer-link">使用方式</a>
-      <a href="#parallel" class="footer-link">平行人生</a>
       <a href="#roadmap" class="footer-link">产品路线图</a>
       <a href="#" class="footer-link">下载 App</a>
     </div>
@@ -796,30 +760,6 @@
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
-
-  function handleSimulate() {
-    const btn = document.querySelector('.simulate-btn');
-    const textarea = document.querySelector('.parallel-decision-input');
-    if (!textarea.value.trim()) {
-      textarea.style.borderColor = 'rgba(226,75,74,0.5)';
-      setTimeout(() => { textarea.style.borderColor = ''; }, 2000);
-      return;
-    }
-    btn.textContent = '正在分析你的历史错题数据…';
-    btn.disabled = true;
-    btn.style.opacity = '0.6';
-    setTimeout(() => {
-      btn.textContent = '模拟完成 · 向上查看你的平行人生 ↑';
-      btn.style.background = '#0F6E56';
-      document.querySelector('.parallel-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setTimeout(() => {
-        btn.textContent = '开始模拟平行人生 →';
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        btn.style.background = '';
-      }, 5000);
-    }, 2500);
-  }
 
 </script>
 </body>
