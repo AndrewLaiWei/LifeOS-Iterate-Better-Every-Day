@@ -8,14 +8,20 @@
     "init-db": "node db/init-db.js",
     "dev": "node --watch server.js"
   },
-  "keywords": ["lifeos", "mistakes", "ai", "self-improvement"],
+  "keywords": [
+    "lifeos",
+    "mistakes",
+    "ai",
+    "self-improvement"
+  ],
   "author": "Andrew Lai Wei",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.21.0",
-    "sqlite3": "^5.1.7",
+    "@libsql/client": "^0.17.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
-    "openai": "^4.73.0"
+    "express": "^4.21.0",
+    "openai": "^4.73.0",
+    "sqlite3": "^5.1.7"
   }
 }
