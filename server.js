@@ -284,8 +284,21 @@ app.get('/api/health', (req, res) => {
 
 // AI 分析接口
 app.post('/api/analyze', async (req, res) => {
-  const { id, raw_text } = req.body;
-  if (!id || !raw_text) return res.status(400).json({ error: '缺少 id 或 raw_text' });
+  const { id, raw_text, answers } = req.body;
+  const hasAnswers = answers && typeof answers === 'object' && Object.keys(answers).length > 0;
+  if (!raw_text && !hasAnswers) return res.status(400).json({ error: '缺少 raw_text 或 answers' });
+
+  // 构建 prompt：从 raw_text 和 answers 中提取完整上下文
+  const parts = [];
+  if (raw_text) parts.push('【用户原始口述】\n' + raw_text);
+  if (hasAnswers) {
+    if (answers.event) parts.push('【发生了什么事】\n' + answers.event);
+    if (answers.action) parts.push('【当时做了什么】\n' + answers.action);
+    if (answers.thought) parts.push('【当时是怎么想的】\n' + answers.thought);
+    if (answers.consequence) parts.push('【导致了什么后果】\n' + answers.consequence);
+    if (answers.plan) parts.push('【以后打算怎么做】\n' + answers.plan);
+  }
+  const inputText = parts.join('\n\n');
 
   const prompt = `你是一位专业的错题分析教练。请分析以下失误记录，并返回纯JSON（不要加任何解释文字），格式如下：
 {
@@ -308,7 +321,7 @@ app.post('/api/analyze', async (req, res) => {
   },
   "actions": ["下次行动1", "下次行动2", "下次行动3"]
 }
-失误记录："${raw_text}"`;
+失误记录："${inputText}"`;
 
   try {
     const response = await ai.chat.completions.create({

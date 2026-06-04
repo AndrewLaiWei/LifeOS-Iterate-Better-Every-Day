@@ -85,21 +85,46 @@ ${inputText}
       clean = clean.trim();
     }
 
-    // 保存分析结果到数据库
+    // 保存分析结果到数据库（同时存 analysis_structured + type + scene_detail）
     if (id) {
-      // 先解析出 category 和 scenario
       let category = null;
       let scenario = null;
+      let structured = null;
+      let type = null;
+      let sceneDetail = null;
       try {
         const parsed = JSON.parse(clean);
         category = parsed.category || null;
         scenario = parsed.scenario || null;
+        type = parsed.type || category || null;
+        // 构建 structured 格式（与 server.js 一致）
+        if (parsed.root) {
+          structured = JSON.stringify(parsed);
+          sceneDetail = parsed.scene ? JSON.stringify(parsed.scene) : null;
+        } else {
+          // 旧格式 → 转换为新格式
+          structured = JSON.stringify({
+            type: parsed.category || '未分类',
+            scene: {},
+            root: {
+              surface: parsed.surfaceCause || parsed.behavioralAnalysis || '',
+              deep: parsed.deepCause || '',
+              biases: parsed.cognitiveBias ? [parsed.cognitiveBias] : []
+            },
+            suggestion: {
+              strategy: (parsed.improvementSuggestions || []).join('；'),
+              method: parsed.longTermValue || ''
+            },
+            actions: parsed.actionChecklist || []
+          });
+          type = parsed.category || null;
+        }
       } catch (e) {
         // 解析失败不影响主流程
       }
       await db.execute({
-        sql: 'UPDATE mistake_records SET analysis_json = ?, category = COALESCE(?, category), scenario = COALESCE(?, scenario) WHERE id = ?',
-        args: [clean, category, scenario, id],
+        sql: 'UPDATE mistake_records SET analysis_json = ?, analysis_structured = ?, type = COALESCE(?, type), category = COALESCE(?, category), scenario = COALESCE(?, scenario), scene_detail = COALESCE(?, scene_detail) WHERE id = ?',
+        args: [clean, structured, type, category, scenario, sceneDetail, id],
       });
     }
 

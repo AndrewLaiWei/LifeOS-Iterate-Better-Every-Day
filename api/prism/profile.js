@@ -7,8 +7,8 @@ module.exports = async (req, res) => {
 
   try {
     const result = await db.execute(`
-      SELECT type, analysis_structured FROM mistake_records
-      WHERE analysis_structured IS NOT NULL
+      SELECT type, analysis_structured, analysis_json FROM mistake_records
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
     `);
 
     if (result.rows.length === 0) {
@@ -20,8 +20,20 @@ module.exports = async (req, res) => {
     // 用 AI 汇总生成画像
     const summary = result.rows.map(r => {
       let a = {};
-      try { a = JSON.parse(r.analysis_structured); } catch(e) {}
-      return `类型:${r.type || '未分类'}\n表层:${a.root ? a.root.surface : ''}\n深层:${a.root?.deep || ''}\n认知偏误:${(a.root && a.root.biases) ? a.root.biases.join(',') : ''}`;
+      try { a = JSON.parse(r.analysis_structured || '{}'); } catch(e) {}
+      // 兼容旧格式
+      let root = a.root || { surface: '', deep: '', biases: [] };
+      if (!a.root && r.analysis_json) {
+        try {
+          const old = JSON.parse(r.analysis_json);
+          root = {
+            surface: old.surfaceCause || old.behavioralAnalysis || '',
+            deep: old.deepCause || '',
+            biases: old.cognitiveBias ? [old.cognitiveBias] : []
+          };
+        } catch(e) {}
+      }
+      return `类型:${r.type || '未分类'}\n表层:${root.surface}\n深层:${root.deep}\n认知偏误:${root.biases.join(',')}`;
     }).join('\n---\n');
 
     const prompt = `你是一位专业的个人成长教练。基于以下错题记录汇总，请生成用户成长画像，返回纯JSON（不要加任何解释）：

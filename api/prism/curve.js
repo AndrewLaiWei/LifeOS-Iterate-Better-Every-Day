@@ -9,7 +9,7 @@ module.exports = async (req, res) => {
     const result = await db.execute(`
       SELECT created_at, type, analysis_structured
       FROM mistake_records
-      WHERE analysis_structured IS NOT NULL
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
       ORDER BY created_at ASC
     `);
 

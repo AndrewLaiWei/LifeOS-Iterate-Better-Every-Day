@@ -6,8 +6,8 @@ module.exports = async (req, res) => {
 
   try {
     const result = await db.execute(`
-      SELECT analysis_structured FROM mistake_records
-      WHERE analysis_structured IS NOT NULL
+      SELECT analysis_structured, analysis_json FROM mistake_records
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
     `);
 
     const DAYS = ['周一','周二','周三','周四','周五','周末'];
@@ -17,7 +17,8 @@ module.exports = async (req, res) => {
 
     result.rows.forEach(row => {
       try {
-        const a = JSON.parse(row.analysis_structured);
+        let a = {};
+        try { a = JSON.parse(row.analysis_structured || '{}'); } catch(e) {}
         const s = a.scene || {};
         const day = s.time || '';
         const period = s.period || '';

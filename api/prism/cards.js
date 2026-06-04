@@ -14,10 +14,29 @@ module.exports = async (req, res) => {
 
     const cards = result.rows.map(row => {
       let analysis = {};
-      try { analysis = JSON.parse(row.analysis_structured); } catch(e) {}
+      try { analysis = JSON.parse(row.analysis_structured || '{}'); } catch(e) {}
       let scene = analysis.scene || {};
       if (row.scene_detail && !analysis.scene) {
         try { scene = JSON.parse(row.scene_detail); } catch(e) {}
+      }
+      // 兼容旧 analysis_json 格式
+      let root = analysis.root || { surface: '', deep: '', biases: [] };
+      let suggestion = analysis.suggestion || { strategy: '', method: '' };
+      let actions = analysis.actions || [];
+      if (!analysis.root && row.analysis_json) {
+        try {
+          const old = JSON.parse(row.analysis_json);
+          root = {
+            surface: old.surfaceCause || old.behavioralAnalysis || '',
+            deep: old.deepCause || '',
+            biases: old.cognitiveBias ? [old.cognitiveBias] : []
+          };
+          suggestion = {
+            strategy: (old.improvementSuggestions || []).join('；') || '',
+            method: old.longTermValue || ''
+          };
+          actions = old.actionChecklist || [];
+        } catch(e) {}
       }
       return {
         id: 'mk-' + row.id,
@@ -28,10 +47,9 @@ module.exports = async (req, res) => {
         },
         type: row.type || analysis.type || '未分类',
         scene: scene,
-        root: analysis.root || { surface: '', deep: '', biases: [] },
-        suggestion: analysis.suggestion || { strategy: '', method: '' },
-        actions: analysis.actions || [],
-        analysis_json: row.analysis_json || ''
+        root: root,
+        suggestion: suggestion,
+        actions: actions
       };
     });
 

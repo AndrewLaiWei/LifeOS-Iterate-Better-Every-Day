@@ -8,6 +8,22 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 20px 48px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(10,10,10,0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .nav-logo { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; color: #fff; text-decoration: none; }
+  .nav-logo span { color: #7F77DD; }
+  .nav-links { display: flex; gap: 32px; }
+  .nav-links a { font-size: 14px; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: #fff; }
+  .nav-links a.active { color: #7F77DD; }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #0f0f1a;
@@ -17,6 +33,7 @@
     flex-direction: column;
     align-items: center;
     padding: 24px;
+    padding-top: 80px;
   }
 
   h1 {
@@ -288,6 +305,16 @@
 </style>
 </head>
 <body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="nav-logo">Life<span>OS</span></a>
+  <div class="nav-links">
+    <a href="index.html">首页</a>
+    <a href="voice-to-text.html" class="active">开始体验</a>
+    <a href="prism.html">复盘棱镜</a>
+  </div>
+</nav>
 
 <h1>AI 复盘</h1>
 
@@ -584,8 +611,13 @@ async function submitForAnalysis() {
   analyzeBtn.disabled = true;
   analyzeBtn.textContent = '分析中…';
 
-  // 把所有回答拼成 raw_text（兼容后端）
-  const rawText = Object.entries(guideAnswers).map(([k, v]) => v).join('\n');
+  // 把所有回答拼成带标签的 raw_text（让 AI 理解每个回答的上下文）
+  const rawText = Object.entries(guideAnswers)
+    .map(([k, v]) => {
+      const label = questionLabels[k] || k;
+      return '【' + label + '】' + v;
+    })
+    .join('\n');
 
   try {
     // 第 1 步：保存到数据库
@@ -627,23 +659,59 @@ async function submitForAnalysis() {
 
     const analyzeData = await analyzeRes.json();
 
-    // 显示分析结果
+    // 显示分析结果（兼容新旧格式）
     if (analyzeData.analysis) {
       try {
         const obj = JSON.parse(analyzeData.analysis);
         let html = '';
-        html += '<div style="margin-bottom:12px"><strong>事件记录</strong><br>' + escapeHtml(obj.eventRecord || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>表面原因</strong><br>' + escapeHtml(obj.surfaceCause || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>行为分析</strong><br>' + escapeHtml(obj.behavioralAnalysis || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>深层原因</strong><br>' + escapeHtml(obj.deepCause || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>认知偏差</strong><br>' + escapeHtml(obj.cognitiveBias || '') + '</div>';
-        html += '<div style="margin-bottom:12px"><strong>改进建议</strong><ul style="margin:4px 0 0 16px">';
-        (obj.improvementSuggestions || []).forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
-        html += '</ul></div>';
-        html += '<div style="margin-bottom:12px"><strong>行动清单</strong><ul style="margin:4px 0 0 16px">';
-        (obj.actionChecklist || []).forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
-        html += '</ul></div>';
-        html += '<div><strong>长期价值</strong><br>' + escapeHtml(obj.longTermValue || '') + '</div>';
+
+        // 新格式：root.surface / root.deep / suggestion / actions
+        const root = obj.root || {};
+        const suggestion = obj.suggestion || {};
+        const scene = obj.scene || {};
+        const actions = obj.actions || [];
+
+        // 兼容旧格式降级
+        const surface = root.surface || obj.surfaceCause || '';
+        const deep = root.deep || obj.deepCause || '';
+        const biases = root.biases || (obj.cognitiveBias ? [obj.cognitiveBias] : []);
+        const strategy = suggestion.strategy || (obj.improvementSuggestions || []).join('；') || '';
+        const method = suggestion.method || obj.longTermValue || '';
+        const actionList = actions.length > 0 ? actions : (obj.actionChecklist || []);
+        const typeLabel = obj.type || obj.category || '未分类';
+
+        html += '<div style="margin-bottom:12px"><strong style="color:#7F77DD">错题类型</strong><br>' + escapeHtml(typeLabel) + '</div>';
+
+        if (scene.object || scene.env || scene.pressure) {
+          html += '<div style="margin-bottom:12px"><strong style="color:#1D9E75">场景信息</strong><br>';
+          if (scene.time) html += '时间：' + escapeHtml(scene.time) + ' ';
+          if (scene.period) html += '时段：' + escapeHtml(scene.period) + ' ';
+          if (scene.object) html += '对象：' + escapeHtml(scene.object) + ' ';
+          if (scene.env) html += '环境：' + escapeHtml(scene.env) + ' ';
+          if (scene.pressure) html += '压力：' + escapeHtml(scene.pressure);
+          html += '</div>';
+        }
+
+        html += '<div style="margin-bottom:12px"><strong style="color:#D85A30">表层原因</strong><br>' + escapeHtml(surface) + '</div>';
+        html += '<div style="margin-bottom:12px"><strong style="color:#D85A30">深层原因</strong><br>' + escapeHtml(deep) + '</div>';
+
+        if (biases.length > 0) {
+          html += '<div style="margin-bottom:12px"><strong style="color:#BA7517">认知偏误</strong><br>' + biases.map(b => escapeHtml(b)).join('、') + '</div>';
+        }
+
+        if (strategy) {
+          html += '<div style="margin-bottom:12px"><strong style="color:#1D9E75">改进策略</strong><br>' + escapeHtml(strategy) + '</div>';
+        }
+        if (method) {
+          html += '<div style="margin-bottom:12px"><strong style="color:#1D9E75">可练习方法</strong><br>' + escapeHtml(method) + '</div>';
+        }
+
+        if (actionList.length > 0) {
+          html += '<div style="margin-bottom:12px"><strong style="color:#378ADD">行动清单</strong><ul style="margin:4px 0 0 16px">';
+          actionList.forEach(s => { html += '<li>' + escapeHtml(s) + '</li>'; });
+          html += '</ul></div>';
+        }
+
         analysisContent.innerHTML = html;
         status.textContent = '分析完成';
       } catch (e) {
