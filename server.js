@@ -1,10 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const sqlite3 = require('sqlite3').verbose();
-const initDB = require('./db/init-db');
+const { createClient } = require('@libsql/client');
 const OpenAI = require('openai');
 
+// ── Turso 云数据库 ──
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN,
+});
+
+// ── DeepSeek AI ──
 const ai = new OpenAI({
   apiKey: process.env.LLM_API_KEY,
   baseURL: process.env.LLM_BASE_URL,
@@ -13,93 +19,122 @@ const ai = new OpenAI({
 const app = express();
 const PORT = 3000;
 
-const db = initDB();
+app.use(cors());
+app.use(express.json());
+app.use(express.static('public'));
 
-// ── 数据库迁移：添加新列（忽略已存在的错误）──
-function runMigrations() {
+// ── 初始化表结构（幂等）──
+async function initDB() {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS mistake_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at TEXT DEFAULT (datetime('now', 'localtime')),
+      updated_at TEXT DEFAULT (datetime('now', 'localtime')),
+      time TEXT,
+      scene TEXT,
+      event TEXT,
+      mistake TEXT,
+      result TEXT,
+      raw_text TEXT,
+      structured TEXT,
+      analysis_json TEXT,
+      tags TEXT,
+      category TEXT,
+      scenario TEXT,
+      analysis_structured TEXT,
+      type TEXT,
+      scene_detail TEXT
+    )
+  `);
+  // 补全新列（已存在则跳过）
   const migrations = [
+    'ALTER TABLE mistake_records ADD COLUMN category TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN scenario TEXT',
     'ALTER TABLE mistake_records ADD COLUMN analysis_structured TEXT',
     'ALTER TABLE mistake_records ADD COLUMN type TEXT',
     'ALTER TABLE mistake_records ADD COLUMN scene_detail TEXT',
   ];
-  migrations.forEach(sql => {
-    db.run(sql, (err) => {
-      if (err && !err.message.includes('duplicate column name')) {
-        // 列已存在是正常情况，不输出警告
-      }
-    });
-  });
+  for (const sql of migrations) {
+    try { await db.execute(sql); } catch(e) { /* 列已存在，跳过 */ }
+  }
+  console.log('✅ Turso 表结构已就绪');
 }
-// 等待表创建完成后再执行迁移
-setTimeout(runMigrations, 800);
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static('public'));
 
 // ═══════════════════════════════════════════
 //  复盘棱镜 API
 // ═══════════════════════════════════════════
 
-// 获取所有已分析的错题卡片（兼容 analysis_json 和 analysis_structured）
-app.get('/api/prism/cards', (req, res) => {
-  const sql = `
-    SELECT id, created_at, raw_text, type, scene_detail, analysis_structured, analysis_json
-    FROM mistake_records
-    WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
-    ORDER BY created_at DESC
-  `;
-  db.all(sql, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    try {
-      const cards = rows.map(row => {
-        let analysis = {};
-        try { analysis = JSON.parse(row.analysis_structured); } catch(e) {}
-        let scene = analysis.scene || {};
-        // 如果 scene_detail 存在且 analysis.scene 不存在，则使用 scene_detail
-        if (row.scene_detail && !analysis.scene) {
-          try { scene = JSON.parse(row.scene_detail); } catch(e) {}
-        }
-        return {
-          id: 'mk-' + row.id,
-          raw: {
-            type: '文本',
-            content: row.raw_text || '',
-            time: row.created_at || ''
-          },
-          type: row.type || analysis.type || '未分类',
-          scene: scene,
-          root: analysis.root || { surface: '', deep: '', biases: [] },
-          suggestion: analysis.suggestion || { strategy: '', method: '' },
-          actions: analysis.actions || [],
-          analysis_json: row.analysis_json || ''
-        };
-      });
-      res.json(cards);
-    } catch (e) {
-      res.status(500).json({ error: '解析数据失败: ' + e.message });
-    }
-  });
+// 获取所有已分析的错题卡片
+app.get('/api/prism/cards', async (req, res) => {
+  try {
+    const result = await db.execute(`
+      SELECT id, created_at, raw_text, type, scene_detail, analysis_structured, analysis_json
+      FROM mistake_records
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
+      ORDER BY created_at DESC
+    `);
+    const cards = result.rows.map(row => {
+      let analysis = {};
+      try { analysis = JSON.parse(row.analysis_structured || '{}'); } catch(e) {}
+      let scene = analysis.scene || {};
+      if (row.scene_detail && !analysis.scene) {
+        try { scene = JSON.parse(row.scene_detail); } catch(e) {}
+      }
+      // 兼容旧 analysis_json 格式
+      let root = analysis.root || { surface: '', deep: '', biases: [] };
+      let suggestion = analysis.suggestion || { strategy: '', method: '' };
+      let actions = analysis.actions || [];
+      if (!analysis.root && row.analysis_json) {
+        try {
+          const old = JSON.parse(row.analysis_json);
+          root = {
+            surface: old.surfaceCause || old.behavioralAnalysis || '',
+            deep: old.deepCause || '',
+            biases: old.cognitiveBias ? [old.cognitiveBias] : []
+          };
+          suggestion = {
+            strategy: (old.improvementSuggestions || []).join('；') || '',
+            method: old.longTermValue || ''
+          };
+          actions = old.actionChecklist || [];
+        } catch(e) {}
+      }
+      return {
+        id: 'mk-' + row.id,
+        raw: {
+          type: '文本',
+          content: row.raw_text || '',
+          time: row.created_at || ''
+        },
+        type: row.type || analysis.type || '未分类',
+        scene: scene,
+        root: root,
+        suggestion: suggestion,
+        actions: actions
+      };
+    });
+    res.json(cards);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // 获取热力图聚合数据
-app.get('/api/prism/heatmap', (req, res) => {
-  const sql = `
-    SELECT analysis_structured FROM mistake_records
-    WHERE analysis_structured IS NOT NULL
-  `;
-  db.all(sql, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-
+app.get('/api/prism/heatmap', async (req, res) => {
+  try {
+    const result = await db.execute(`
+      SELECT analysis_structured, analysis_json, scene_detail FROM mistake_records
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
+    `);
     const DAYS = ['周一','周二','周三','周四','周五','周末'];
     const PERIODS = ['上午','下午','夜间','周末'];
-    // heatmap[day][period] = count
     const heat = {};
     DAYS.forEach(d => { heat[d] = {}; PERIODS.forEach(p => { heat[d][p] = 0; }); });
 
-    rows.forEach(row => {
+    result.rows.forEach(row => {
       try {
-        const a = JSON.parse(row.analysis_structured);
+        let a = {};
+        try { a = JSON.parse(row.analysis_structured || '{}'); } catch(e) {}
         const s = a.scene || {};
         const day = s.time || '';
         const period = s.period || '';
@@ -109,35 +144,31 @@ app.get('/api/prism/heatmap', (req, res) => {
       } catch(e) {}
     });
 
-    const result = {
+    res.json({
       headers: ['', ...PERIODS],
       rows: DAYS.map(label => ({
         label,
         vals: PERIODS.map(p => heat[label][p])
       }))
-    };
-    res.json(result);
-  });
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // 获取成长曲线数据
-app.get('/api/prism/curve', (req, res) => {
-  const sql = `
-    SELECT created_at, type, analysis_structured
-    FROM mistake_records
-    WHERE analysis_structured IS NOT NULL
-    ORDER BY created_at ASC
-  `;
-  db.all(sql, [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-
-    if (rows.length === 0) {
+app.get('/api/prism/curve', async (req, res) => {
+  try {
+    const result = await db.execute(`
+      SELECT created_at, type, analysis_structured FROM mistake_records
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
+      ORDER BY created_at ASC
+    `);
+    if (result.rows.length === 0) {
       return res.json({ labels: [], datasets: [] });
     }
-
-    // 按周分组
     const weekMap = {};
-    rows.forEach(row => {
+    result.rows.forEach(row => {
       const d = new Date(row.created_at);
       const weekKey = getWeekKey(d);
       if (!weekMap[weekKey]) weekMap[weekKey] = {};
@@ -145,41 +176,37 @@ app.get('/api/prism/curve', (req, res) => {
       if (!weekMap[weekKey][type]) weekMap[weekKey][type] = 0;
       weekMap[weekKey][type]++;
     });
-
     const weeks = Object.keys(weekMap).sort();
-    const allTypes = [...new Set(rows.map(r => r.type || '未分类'))];
-
-    const datasets = allTypes.map(type => {
-      const color = getColorForType(type);
-      return {
-        label: type,
-        values: weeks.map(w => weekMap[w][type] || 0),
-        color
-      };
-    });
-
+    const allTypes = [...new Set(result.rows.map(r => r.type || '未分类'))];
+    const datasets = allTypes.map(type => ({
+      label: type,
+      values: weeks.map(w => weekMap[w][type] || 0),
+      color: getColorForType(type)
+    }));
     res.json({ labels: weeks, datasets });
-  });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // 获取用户画像
-app.get('/api/prism/profile', (req, res) => {
-  const sql = `
-    SELECT type, analysis_structured FROM mistake_records
-    WHERE analysis_structured IS NOT NULL
-  `;
-  db.all(sql, [], async (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (rows.length === 0) {
+app.get('/api/prism/profile', async (req, res) => {
+  try {
+    const result = await db.execute(`
+      SELECT type, analysis_structured FROM mistake_records
+      WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
+    `);
+    if (result.rows.length === 0) {
       return res.json({
-        strengths: [], weaknesses: [], trend: '数据不足', reasoning: '需要至少5条错题记录才能生成画像'
+        strengths: [], weaknesses: [],
+        trend: '数据不足', reasoning: '需要至少5条错题记录才能生成画像'
       });
     }
-
+    const rows = result.rows;
     // 用 AI 汇总生成画像
     const summary = rows.map(r => {
       let a = {};
-      try { a = JSON.parse(r.analysis_structured); } catch(e) {}
+      try { a = JSON.parse(r.analysis_structured || '{}'); } catch(e) {}
       return `类型:${r.type || '未分类'}\n表层:${a.root ? a.root.surface : ''}\n深层:${a.root ? a.root.deep : ''}\n认知偏误:${(a.root && a.root.biases) ? a.root.biases.join(',') : ''}`;
     }).join('\n---\n');
 
@@ -219,35 +246,43 @@ ${summary}`;
         reasoning: `基于${rows.length}条错题记录分析，主要弱项为${sorted[0][0]}。`
       });
     }
-  });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // ═══════════════════════════════════════════
-//  原有 API（保持不变）
+//  原有 API
 // ═══════════════════════════════════════════
 
-app.post('/api/mistakes', (req, res) => {
-  const { time, scene, event, mistake, result, raw_text, type, scene_detail } = req.body;
-  const sql = `INSERT INTO mistake_records (time, scene, event, mistake, result, raw_text, type, scene_detail)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  db.run(sql, [time, scene, event, mistake, result, raw_text, type || '', scene_detail || ''], function(err) {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json({ id: this.lastID, message: '错题已保存' });
-  });
+app.post('/api/mistakes', async (req, res) => {
+  const { time, scene, event, mistake, result: resultField, raw_text, type, scene_detail } = req.body;
+  try {
+    const dbResult = await db.execute({
+      sql: `INSERT INTO mistake_records (time, scene, event, mistake, result, raw_text, type, scene_detail)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [time, scene, event, mistake, resultField, raw_text, type || '', scene_detail || '']
+    });
+    res.json({ id: Number(dbResult.lastInsertRowid), message: '错题已保存' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
-app.get('/api/mistakes', (req, res) => {
-  db.all('SELECT * FROM mistake_records ORDER BY created_at DESC LIMIT 20', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+app.get('/api/mistakes', async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM mistake_records ORDER BY created_at DESC LIMIT 20');
+    res.json(result.rows);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'LifeOS 服务器运行中!' });
+  res.json({ status: 'ok', message: 'LifeOS 服务器运行中 (Turso)!' });
 });
 
-// 增强的 AI 分析接口
+// AI 分析接口
 app.post('/api/analyze', async (req, res) => {
   const { id, raw_text } = req.body;
   if (!id || !raw_text) return res.status(400).json({ error: '缺少 id 或 raw_text' });
@@ -289,13 +324,15 @@ app.post('/api/analyze', async (req, res) => {
     try { structured = JSON.parse(content); } catch(e) {}
 
     if (structured) {
-      db.run(
-        'UPDATE mistake_records SET analysis_json = ?, analysis_structured = ?, type = ? WHERE id = ?',
-        [content, JSON.stringify(structured), structured.type || '', id],
-        (err) => { if (err) console.error('更新失败:', err.message); }
-      );
+      await db.execute({
+        sql: 'UPDATE mistake_records SET analysis_json = ?, analysis_structured = ?, type = ? WHERE id = ?',
+        args: [content, JSON.stringify(structured), structured.type || '', id]
+      });
     } else {
-      db.run('UPDATE mistake_records SET analysis_json = ? WHERE id = ?', [content, id]);
+      await db.execute({
+        sql: 'UPDATE mistake_records SET analysis_json = ? WHERE id = ?',
+        args: [content, id]
+      });
     }
 
     res.json({ analysis: content, structured });
@@ -304,16 +341,8 @@ app.post('/api/analyze', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`LifeOS 服务器已启动! http://localhost:${PORT}`);
-});
-
 // ── 工具函数 ──
 function getWeekKey(date) {
-  const d = new Date(date);
-  d.setHours(0,0,0,0);
-  d.setDate(d.getDate() - d.getDay() + 1); // 周一
-  const m = d.getMonth()+1, day = d.getDate();
   return `第${getWeekNum(date)}周`;
 }
 function getWeekNum(date) {
@@ -333,3 +362,15 @@ function getColorForType(type) {
   };
   return map[type] || '#7F77DD';
 }
+
+// ── 启动 ──
+async function start() {
+  await initDB();
+  app.listen(PORT, () => {
+    console.log(`🚀 LifeOS 服务器已启动! http://localhost:${PORT}`);
+  });
+}
+start().catch(e => {
+  console.error('启动失败:', e);
+  process.exit(1);
+});
