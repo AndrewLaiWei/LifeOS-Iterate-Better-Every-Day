@@ -1,6 +1,26 @@
 // Vercel Serverless Function: /api/prism/cards
 const { db } = require('../db');
 
+/**
+ * 检测文本是否为乱码/脏数据（旧版录音存入的二进制或错误编码数据）
+ * 正常范围：ASCII可打印、中文、常见标点、换行回车制表符
+ */
+function isGarbageText(str) {
+  if (!str || str.length < 4) return false;
+  let normal = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str.charCodeAt(i);
+    if (c === 0x0A || c === 0x0D || c === 0x09) { normal++; continue; } // \n \r \t
+    if (c >= 0x20 && c <= 0x7E) { normal++; continue; } // ASCII printable
+    if (c >= 0x4E00 && c <= 0x9FFF) { normal++; continue; } // CJK
+    if (c >= 0x3000 && c <= 0x303F) { normal++; continue; } // CJK punctuation
+    if (c >= 0xFF00 && c <= 0xFFEF) { normal++; continue; } // Fullwidth
+    if (c >= 0x2000 && c <= 0x206F) { normal++; continue; } // General punctuation
+    if (c >= 0x00A0 && c <= 0x00BF) { normal++; continue; } // Latin-1 supplement symbols
+  }
+  return (normal / str.length) < 0.75; // 正常字符不足75%则判为乱码
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET') return res.status(405).json({ error: '请使用 GET 方法' });
 
@@ -48,11 +68,15 @@ module.exports = async (req, res) => {
           try { parsedLabels = JSON.parse(row.labels); } catch(e) {}
         }
       }
+      // 过滤乱码原始记录（旧版脏数据降级）
+      let rawContent = row.raw_text || '';
+      if (isGarbageText(rawContent)) rawContent = '';
+
       return {
         id: 'mk-' + row.id,
         raw: {
           type: '文本',
-          content: row.raw_text || '',
+          content: rawContent,
           time: row.created_at || ''
         },
         type: row.type || analysis.type || '未分类',

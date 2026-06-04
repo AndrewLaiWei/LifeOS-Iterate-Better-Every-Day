@@ -655,10 +655,11 @@ function renderCards() {
           </div>
           <button class="card-expand-btn" onclick="toggleCard('${card.id}')">${isExpanded ? '收起分析 ↑' : '展开分析 ↓'}</button>
         </div>
+        ${card.raw && card.raw.content ? `
         <div class="card-raw">
           <div class="card-raw-label">原始记录</div>
-          ${escapeHtml(card.raw ? card.raw.content : '')}
-        </div>
+          ${escapeHtml(card.raw.content)}
+        </div>` : ''}
         ${emotion.length || severity || risk || domain.length || pattern.length ? `
         <div class="label-tags">
           ${emotion.map(e => `<span class="label-tag emotion">😢 ${escapeHtml(e)}</span>`).join('')}
