@@ -43,7 +43,8 @@ async function initDB() {
       scenario TEXT,
       analysis_structured TEXT,
       type TEXT,
-      scene_detail TEXT
+      scene_detail TEXT,
+      labels TEXT
     )
   `);
   // 补全新列（已存在则跳过）
@@ -53,6 +54,7 @@ async function initDB() {
     'ALTER TABLE mistake_records ADD COLUMN analysis_structured TEXT',
     'ALTER TABLE mistake_records ADD COLUMN type TEXT',
     'ALTER TABLE mistake_records ADD COLUMN scene_detail TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN labels TEXT',
   ];
   for (const sql of migrations) {
     try { await db.execute(sql); } catch(e) { /* 列已存在，跳过 */ }
@@ -68,7 +70,7 @@ async function initDB() {
 app.get('/api/prism/cards', async (req, res) => {
   try {
     const result = await db.execute(`
-      SELECT id, created_at, raw_text, type, scene_detail, analysis_structured, analysis_json
+      SELECT id, created_at, raw_text, type, scene_detail, analysis_structured, analysis_json, labels
       FROM mistake_records
       WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
       ORDER BY created_at DESC
@@ -84,6 +86,7 @@ app.get('/api/prism/cards', async (req, res) => {
       let root = analysis.root || { surface: '', deep: '', biases: [] };
       let suggestion = analysis.suggestion || { strategy: '', method: '' };
       let actions = analysis.actions || [];
+      let parsedLabels = null;
       if (!analysis.root && row.analysis_json) {
         try {
           const old = JSON.parse(row.analysis_json);
@@ -97,7 +100,16 @@ app.get('/api/prism/cards', async (req, res) => {
             method: old.longTermValue || ''
           };
           actions = old.actionChecklist || [];
+          if (old.labels) parsedLabels = old.labels;
         } catch(e) {}
+      }
+      // 解析 labels
+      if (!parsedLabels) {
+        if (analysis.labels) {
+          parsedLabels = analysis.labels;
+        } else if (row.labels) {
+          try { parsedLabels = JSON.parse(row.labels); } catch(e) {}
+        }
       }
       return {
         id: 'mk-' + row.id,
@@ -110,7 +122,8 @@ app.get('/api/prism/cards', async (req, res) => {
         scene: scene,
         root: root,
         suggestion: suggestion,
-        actions: actions
+        actions: actions,
+        labels: parsedLabels
       };
     });
     res.json(cards);
@@ -284,25 +297,22 @@ app.get('/api/health', (req, res) => {
 
 // AI 分析接口
 app.post('/api/analyze', async (req, res) => {
-  const { id, raw_text, answers } = req.body;
-  const hasAnswers = answers && typeof answers === 'object' && Object.keys(answers).length > 0;
-  if (!raw_text && !hasAnswers) return res.status(400).json({ error: '缺少 raw_text 或 answers' });
+  const { id, raw_text } = req.body;
+  if (!raw_text) return res.status(400).json({ error: '缺少 raw_text' });
 
-  // 构建 prompt：从 raw_text 和 answers 中提取完整上下文
-  const parts = [];
-  if (raw_text) parts.push('【用户原始口述】\n' + raw_text);
-  if (hasAnswers) {
-    if (answers.event) parts.push('【发生了什么事】\n' + answers.event);
-    if (answers.action) parts.push('【当时做了什么】\n' + answers.action);
-    if (answers.thought) parts.push('【当时是怎么想的】\n' + answers.thought);
-    if (answers.consequence) parts.push('【导致了什么后果】\n' + answers.consequence);
-    if (answers.plan) parts.push('【以后打算怎么做】\n' + answers.plan);
-  }
-  const inputText = parts.join('\n\n');
+  const prompt = `你是一位专业的错题分析教练。用户会一次性口述一次失误经历，可能包含事件经过、行为、想法、后果、改进计划等内容。
 
-  const prompt = `你是一位专业的错题分析教练。请分析以下失误记录，并返回纯JSON（不要加任何解释文字），格式如下：
+⚠️ 关键要求：
+1. 你必须从用户的口述中提取所有维度的信息，不能遗漏
+2. 用户的口述是连续的，可能按任意顺序提到以下内容：发生了什么事、做了什么、怎么想的、后果、以后打算怎么做
+3. 如果某个维度用户没提到，根据已有信息合理推断，不要留空
+
+用户口述：
+${raw_text}
+
+请返回纯JSON（不要加任何解释文字），格式如下：
 {
-  "type": "错误的类型（沟通冲突/情绪失控/时间管理/技能不足/认知盲区 之一）",
+  "type": "错题类型（沟通冲突/情绪失控/时间管理/技能不足/认知盲区 之一）",
   "scene": {
     "time": "发生错误的星期（周一/周二/周三/周四/周五/周末）",
     "period": "发生时段（上午/下午/夜间/周末）",
@@ -319,9 +329,22 @@ app.post('/api/analyze', async (req, res) => {
     "strategy": "改进策略（具体可执行，3-5句话）",
     "method": "可练习的方法名称（如：三问法、外部大脑法）"
   },
-  "actions": ["下次行动1", "下次行动2", "下次行动3"]
+  "actions": ["下次行动1", "下次行动2", "下次行动3"],
+  "labels": {
+    "emotion": ["涉及的核心情绪，1-3个，从以下选取：愤怒/焦虑/恐惧/沮丧/烦躁/冲动/犹豫/侥幸/自责/委屈/无感"],
+    "severity": "严重程度（轻微/中等/严重/关键）",
+    "recurrenceRisk": "再发风险（高/中/低）",
+    "domain": ["涉及的生活领域，1-2个，从以下选取：工作/生活/人际关系/健康/财务/学习/家庭"],
+    "pattern": ["行为模式，1-2个，从以下选取：逃避/对抗/拖延/冲动/盲从/过度准备/事后后悔/自以为是"]
+  }
 }
-失误记录："${inputText}"`;
+
+⚠️ labels 是棱镜分析的核心数据，必须认真填写：
+- emotion：识别口述中隐含的情绪，即使用户没直说也要推断
+- severity：根据后果影响范围和不可逆程度判断
+- recurrenceRisk：根据行为模式是否根深蒂固判断
+- domain：这件事主要发生在哪个生活领域
+- pattern：用户犯了什么行为模式的错误（不是表面错误，是底层模式）`;
 
   try {
     const response = await ai.chat.completions.create({
@@ -336,10 +359,17 @@ app.post('/api/analyze', async (req, res) => {
     let structured = null;
     try { structured = JSON.parse(content); } catch(e) {}
 
+    let labels = null;
+    if (structured && structured.labels) {
+      labels = JSON.stringify(structured.labels);
+    }
+
     if (structured) {
       await db.execute({
-        sql: 'UPDATE mistake_records SET analysis_json = ?, analysis_structured = ?, type = ? WHERE id = ?',
-        args: [content, JSON.stringify(structured), structured.type || '', id]
+        sql: `UPDATE mistake_records
+              SET analysis_json = ?, analysis_structured = ?, type = ?, labels = COALESCE(?, labels)
+              WHERE id = ?`,
+        args: [content, JSON.stringify(structured), structured.type || '', labels, id]
       });
     } else {
       await db.execute({

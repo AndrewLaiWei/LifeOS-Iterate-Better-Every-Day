@@ -40,196 +40,144 @@
     font-size: 20px;
     font-weight: 600;
     color: #a0a0c0;
-    margin-bottom: 32px;
+    margin-bottom: 16px;
     letter-spacing: 2px;
   }
 
-  /* 录音小按钮 */
-  .record-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    border: none;
-    background: linear-gradient(135deg, #4a4a6a, #3a3a5a);
-    color: #d0d0f0;
-    font-size: 18px;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 4px 16px rgba(80, 80, 200, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-  .record-btn:hover { transform: scale(1.08); }
-  .record-btn:active { transform: scale(0.95); }
-  .record-btn.recording {
-    background: linear-gradient(135deg, #cc3344, #aa2244);
-    box-shadow: 0 4px 20px rgba(200, 50, 80, 0.5);
-    animation: pulse-sm 1.2s infinite;
-  }
-
-  @keyframes pulse-sm {
-    0%, 100% { box-shadow: 0 4px 20px rgba(200,50,80,0.5); }
-    50% { box-shadow: 0 4px 32px rgba(200,50,80,0.8); }
-  }
-
-  /* 状态提示条 */
-  #status {
-    margin-top: 16px;
-    font-size: 13px;
-    color: #6060a0;
-    min-height: 20px;
-  }
-
-  /* 引导问题区域 */
-  #guidePanel {
-    margin-top: 16px;
+  /* ── 主录音区 ── */
+  .record-section {
     width: 100%;
     max-width: 600px;
+    text-align: center;
   }
 
-  #guidePanel h2 {
-    font-size: 16px;
-    color: #8080b0;
-    margin-bottom: 8px;
-    font-weight: 600;
+  .record-hint {
+    font-size: 14px;
+    color: #7070a0;
+    margin-bottom: 24px;
+    line-height: 1.7;
   }
 
-  .guide-hint {
-    font-size: 13px;
-    color: #505070;
-    margin-bottom: 20px;
-    line-height: 1.6;
-  }
-
-  .guide-question {
-    background: #1a1a2e;
-    border: 1px solid #2a2a4a;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 12px;
-    transition: border-color 0.3s;
-  }
-
-  .guide-question.answered {
-    border-color: #2a5a3a;
-  }
-
-  .guide-question-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-  }
-
-  .guide-question-num {
-    width: 24px;
-    height: 24px;
+  /* 大录音按钮 */
+  .big-record-btn {
+    width: 96px;
+    height: 96px;
     border-radius: 50%;
-    background: #2a2a4a;
-    color: #8080b0;
-    font-size: 12px;
-    display: flex;
+    border: 3px solid #3a3a5a;
+    background: linear-gradient(135deg, #2a2a4a, #1a1a3a);
+    color: #d0d0f0;
+    font-size: 36px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
+    box-shadow: 0 4px 24px rgba(80, 80, 200, 0.15);
+  }
+  .big-record-btn:hover {
+    transform: scale(1.06);
+    border-color: #5a5a8a;
+    box-shadow: 0 6px 32px rgba(80, 80, 200, 0.25);
+  }
+  .big-record-btn:active { transform: scale(0.96); }
+  .big-record-btn.recording {
+    border-color: #cc3344;
+    background: linear-gradient(135deg, #442233, #331122);
+    box-shadow: 0 4px 36px rgba(200, 50, 80, 0.4);
+    animation: pulse-big 1.5s infinite;
   }
 
-  .guide-question-text {
-    font-size: 15px;
-    color: #a0a0c0;
-    flex: 1;
+  @keyframes pulse-big {
+    0%, 100% { box-shadow: 0 4px 36px rgba(200,50,80,0.4); }
+    50% { box-shadow: 0 4px 52px rgba(200,50,80,0.7); }
   }
 
-  .guide-question-body {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .guide-answer {
-    flex: 1;
-    min-height: 40px;
+  .record-status {
+    margin-top: 16px;
     font-size: 14px;
-    color: #505070;
-    line-height: 1.6;
-    padding: 8px 0;
-    word-break: break-word;
+    color: #6060a0;
+    min-height: 24px;
   }
 
-  .guide-answer.has-text {
-    color: #b0b0d0;
-  }
-
-  .guide-skip-btn {
-    font-size: 12px;
-    color: #505070;
-    cursor: pointer;
-    padding: 4px 10px;
-    border: 1px solid #2a2a3a;
-    border-radius: 6px;
-    background: transparent;
-    transition: all 0.2s;
-    flex-shrink: 0;
-  }
-  .guide-skip-btn:hover {
-    color: #8080a0;
-    border-color: #3a3a5a;
-  }
-  .guide-skip-btn.skipped {
-    color: #505060;
-    text-decoration: line-through;
-  }
-
-  /* 整理预览区 */
-  #previewCard {
-    margin-top: 24px;
+  /* 实时语音转写区 */
+  .transcript-box {
+    margin-top: 16px;
     width: 100%;
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
     background: #161628;
     border: 1px solid #2a2a4a;
     border-radius: 12px;
     padding: 16px;
-    display: none;
-  }
-  #previewCard.has-content {
-    display: block;
-  }
-  #previewCard .preview-label {
-    font-size: 13px;
-    color: #6060a0;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #2a2a3a;
-  }
-  .preview-item {
-    margin-bottom: 10px;
-    font-size: 14px;
-    line-height: 1.7;
-  }
-  .preview-item-q {
-    color: #7070a0;
-    font-weight: 500;
-  }
-  .preview-item-a {
+    font-size: 15px;
+    line-height: 1.8;
     color: #b0b0d0;
-    margin-top: 2px;
-    padding-left: 12px;
-    border-left: 2px solid #2a3a4a;
+    text-align: left;
+    display: none;
+    word-break: break-word;
   }
-  .preview-item-a.skipped {
-    color: #404060;
-    font-style: italic;
-  }
-  .preview-empty {
-    color: #404060;
-    font-size: 13px;
+  .transcript-box.active { display: block; }
+  .transcript-box .interim {
+    color: #505070;
   }
 
-  /* 开始分析大按钮 */
+  /* ── 提示卡片区域 ── */
+  .tips-section {
+    margin-top: 28px;
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .tips-title {
+    font-size: 14px;
+    color: #6060a0;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  .tip-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .tip-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #161628;
+    border: 1px solid #222240;
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: all 0.3s;
+  }
+
+  .tip-num {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #222244;
+    color: #7070a0;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .tip-text {
+    font-size: 14px;
+    color: #8080a8;
+    line-height: 1.5;
+  }
+
+  /* ── 分析按钮 ── */
   #analyzeBtn {
     margin-top: 24px;
     width: 100%;
+    max-width: 600px;
     padding: 16px;
     border: none;
     border-radius: 12px;
@@ -254,6 +202,7 @@
   #resetBtn {
     margin-top: 16px;
     width: 100%;
+    max-width: 600px;
     padding: 14px;
     border: 1px solid #2a2a4a;
     border-radius: 12px;
@@ -302,6 +251,17 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
   }
+
+  /* 录音时间指示 */
+  .record-timer {
+    margin-top: 8px;
+    font-size: 22px;
+    font-weight: 300;
+    color: #cc5566;
+    font-variant-numeric: tabular-nums;
+    display: none;
+  }
+  .record-timer.active { display: block; }
 </style>
 </head>
 <body>
@@ -318,80 +278,51 @@
 
 <h1>AI 复盘</h1>
 
-<!-- 5个引导问题，页面打开直接显示 -->
-<div id="guidePanel">
-  <h2>记录一次失误</h2>
-  <div class="guide-hint">每个问题都可以用语音回答，或点击「跳过」。回答越详细，AI 分析越精准。</div>
-
-  <div class="guide-question" id="q1" data-key="event">
-    <div class="guide-question-header">
-      <div class="guide-question-num">1</div>
-      <div class="guide-question-text">发生了什么事？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-event">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="event" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('event')">跳过</button>
-    </div>
+<!-- 主录音区 -->
+<div class="record-section" id="recordSection">
+  <div class="record-hint">
+    点击下方按钮，一次性说出你的失误经历。<br>
+    参考右边的提示，尽量覆盖所有维度。
   </div>
 
-  <div class="guide-question" id="q2" data-key="action">
-    <div class="guide-question-header">
-      <div class="guide-question-num">2</div>
-      <div class="guide-question-text">当时做了什么？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-action">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="action" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('action')">跳过</button>
-    </div>
-  </div>
+  <button class="big-record-btn" id="bigRecBtn" onclick="toggleRecording()">🎙</button>
 
-  <div class="guide-question" id="q3" data-key="thought">
-    <div class="guide-question-header">
-      <div class="guide-question-num">3</div>
-      <div class="guide-question-text">你当时是怎么想的？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-thought">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="thought" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('thought')">跳过</button>
-    </div>
-  </div>
+  <div class="record-timer" id="recordTimer">00:00</div>
+  <div class="record-status" id="recordStatus"></div>
 
-  <div class="guide-question" id="q4" data-key="consequence">
-    <div class="guide-question-header">
-      <div class="guide-question-num">4</div>
-      <div class="guide-question-text">导致了什么后果？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-consequence">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="consequence" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('consequence')">跳过</button>
-    </div>
-  </div>
-
-  <div class="guide-question" id="q5" data-key="plan">
-    <div class="guide-question-header">
-      <div class="guide-question-num">5</div>
-      <div class="guide-question-text">以后打算怎么做？</div>
-    </div>
-    <div class="guide-question-body">
-      <div class="guide-answer" id="answer-plan">点击 🎙 语音回答</div>
-      <button class="record-btn guide-rec-btn" data-key="plan" title="录音">🎙</button>
-      <button class="guide-skip-btn" onclick="skipQuestion('plan')">跳过</button>
-    </div>
-  </div>
-
-  <!-- 整理后的语音记录预览 -->
-  <div id="previewCard">
-    <div class="preview-label">语音记录整理</div>
-    <div id="previewContent"><div class="preview-empty">开始回答问题后，这里会显示整理后的记录</div></div>
-  </div>
-
-  <button id="analyzeBtn" onclick="submitForAnalysis()">开始 AI 分析</button>
-  <button id="resetBtn" onclick="resetAll()">再来一条</button>
+  <!-- 实时语音转写 -->
+  <div class="transcript-box" id="transcriptBox"></div>
 </div>
+
+<!-- 提示卡片：5 个关键维度 -->
+<div class="tips-section">
+  <div class="tips-title">试试在录音中覆盖这些维度 👇</div>
+  <div class="tip-cards">
+    <div class="tip-card">
+      <div class="tip-num">1</div>
+      <div class="tip-text">发生了什么事？</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">2</div>
+      <div class="tip-text">当时做了什么？</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">3</div>
+      <div class="tip-text">当时是怎么想的？</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">4</div>
+      <div class="tip-text">导致了什么后果？</div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-num">5</div>
+      <div class="tip-text">以后打算怎么做？</div>
+    </div>
+  </div>
+</div>
+
+<button id="analyzeBtn" onclick="submitForAnalysis()" disabled>开始 AI 分析</button>
+<button id="resetBtn" onclick="resetAll()">再来一条</button>
 
 <div id="analysis">
   <div class="card-label">AI 分析结果</div>
@@ -403,22 +334,26 @@
 <script>
 // ===== 全局状态 =====
 let isRecording = false;
-let recordingTarget = null; // 'event' / 'action' / 'thought' / 'consequence' / 'plan'
 let recognition = null;
 let finalTranscript = '';
-let guideAnswers = {};     // { event: '...', action: '...', ... }
-let guideSkipped = {};     // 记录哪些问题被跳过
+let timerInterval = null;
+let recordSeconds = 0;
 
+const bigRecBtn = document.getElementById('bigRecBtn');
+const recordStatus = document.getElementById('recordStatus');
+const recordTimer = document.getElementById('recordTimer');
+const transcriptBox = document.getElementById('transcriptBox');
+const analyzeBtn = document.getElementById('analyzeBtn');
 const status = document.getElementById('status');
 const analysisDiv = document.getElementById('analysis');
 const analysisContent = document.getElementById('analysis-content');
-const guidePanel = document.getElementById('guidePanel');
+const recordSection = document.getElementById('recordSection');
 
 // ===== 检查浏览器支持 =====
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (!SpeechRecognition) {
-  status.textContent = '当前浏览器不支持语音识别，请使用 Chrome 或 Edge';
-  document.querySelectorAll('.guide-rec-btn').forEach(b => b.disabled = true);
+  recordStatus.textContent = '当前浏览器不支持语音识别，请使用 Chrome 或 Edge';
+  bigRecBtn.disabled = true;
 }
 
 // ===== 初始化语音识别 =====
@@ -428,13 +363,6 @@ function initRecognition() {
   recognition.interimResults = true;
   recognition.continuous = true;
   recognition.maxAlternatives = 1;
-
-  recognition.onstart = () => {
-    const answerEl = document.getElementById('answer-' + recordingTarget);
-    answerEl.textContent = '正在录音…';
-    answerEl.classList.add('has-text');
-    answerEl.style.color = '#cc5566';
-  };
 
   recognition.onresult = (event) => {
     let interimText = '';
@@ -447,104 +375,89 @@ function initRecognition() {
       }
     }
 
-    const answerEl = document.getElementById('answer-' + recordingTarget);
-    answerEl.innerHTML = escapeHtml(finalTranscript) +
-      (interimText ? '<span style="color:#555577">' + escapeHtml(interimText) + '</span>' : '');
-    answerEl.style.color = '#b0b0d0';
+    // 实时显示转写结果
+    transcriptBox.innerHTML = escapeHtml(finalTranscript) +
+      (interimText ? '<span class="interim">' + escapeHtml(interimText) + '</span>' : '');
   };
 
   recognition.onerror = (event) => {
     console.error('语音识别错误:', event.error);
     if (event.error === 'not-allowed') {
-      status.textContent = '请允许浏览器使用麦克风权限';
+      recordStatus.textContent = '请允许浏览器使用麦克风权限';
     } else if (event.error === 'no-speech') {
       // 静默处理
     } else if (event.error === 'network') {
-      status.textContent = '网络错误，请检查网络连接';
+      recordStatus.textContent = '网络错误，请检查网络连接';
     }
   };
 
   recognition.onend = () => {
-    if (!isRecording) {
-      // 录音停止 → 保存答案
-      const text = finalTranscript.trim();
-      if (text) {
-        guideAnswers[recordingTarget] = text;
-        const answerEl = document.getElementById('answer-' + recordingTarget);
-        answerEl.textContent = text;
-        answerEl.classList.add('has-text');
-        document.getElementById('q' + getQuestionNum(recordingTarget)).classList.add('answered');
-      }
-      resetGuideBtn(recordingTarget);
-      updatePreview();
-    } else {
+    if (isRecording) {
       // 录音中自动断开，重新启动
       try { recognition.start(); } catch(e) {}
+    } else {
+      // 用户手动停止 → 结束录音
+      stopRecordingUI();
     }
   };
 }
 
-// 根据问题 key 获取序号
-function getQuestionNum(key) {
-  const map = { event: 1, action: 2, thought: 3, consequence: 4, plan: 5 };
-  return map[key] || 1;
-}
+// ===== 录音按钮点击 =====
+function toggleRecording() {
+  if (isRecording) {
+    // 停止录音
+    isRecording = false;
+    try { recognition.stop(); } catch(e) {}
+    // onend 会调用 stopRecordingUI()
+  } else {
+    // 开始录音
+    if (!recognition) initRecognition();
 
-// ===== 整理预览区实时更新 =====
-const questionLabels = {
-  event: '发生了什么事',
-  action: '当时做了什么',
-  thought: '当时是怎么想的',
-  consequence: '导致了什么后果',
-  plan: '以后打算怎么做'
-};
+    isRecording = true;
+    finalTranscript = '';
+    bigRecBtn.classList.add('recording');
+    bigRecBtn.textContent = '⏹';
+    transcriptBox.classList.add('active');
+    transcriptBox.innerHTML = '';
+    recordStatus.textContent = '正在录音，再次点击停止…';
 
-function updatePreview() {
-  const previewCard = document.getElementById('previewCard');
-  const previewContent = document.getElementById('previewContent');
+    // 计时器
+    recordSeconds = 0;
+    recordTimer.classList.add('active');
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+      recordSeconds++;
+      updateTimerDisplay();
+    }, 1000);
 
-  // 检查是否有任何回答或跳过
-  const hasAny = Object.keys(guideAnswers).length > 0 || Object.keys(guideSkipped).length > 0;
-
-  if (!hasAny) {
-    previewCard.classList.remove('has-content');
-    previewContent.innerHTML = '<div class="preview-empty">开始回答问题后，这里会显示整理后的记录</div>';
-    return;
-  }
-
-  previewCard.classList.add('has-content');
-  let html = '';
-  ['event', 'action', 'thought', 'consequence', 'plan'].forEach(key => {
-    const label = questionLabels[key];
-    if (guideSkipped[key]) {
-      html += '<div class="preview-item"><div class="preview-item-q">Q: ' + label + '？</div><div class="preview-item-a skipped">（已跳过）</div></div>';
-    } else if (guideAnswers[key]) {
-      html += '<div class="preview-item"><div class="preview-item-q">Q: ' + label + '？</div><div class="preview-item-a">' + escapeHtml(guideAnswers[key]) + '</div></div>';
+    try {
+      recognition.start();
+    } catch(e) {
+      console.warn('recognition.start() 异常:', e);
     }
-  });
-  previewContent.innerHTML = html;
-}
-
-// 跳过某个问题
-function skipQuestion(key) {
-  guideSkipped[key] = true;
-  const answerEl = document.getElementById('answer-' + key);
-  answerEl.textContent = '已跳过';
-  answerEl.style.color = '#404050';
-  const skipBtn = answerEl.nextElementSibling.nextElementSibling;
-  if (skipBtn) {
-    skipBtn.classList.add('skipped');
-    skipBtn.textContent = '已跳过';
   }
-  updatePreview();
 }
 
-// 重置引导问题录音按钮
-function resetGuideBtn(key) {
-  const questionEl = document.getElementById('q' + getQuestionNum(key));
-  const recBtn = questionEl.querySelector('.guide-rec-btn');
-  recBtn.classList.remove('recording');
-  recBtn.textContent = '🎙';
+function stopRecordingUI() {
+  bigRecBtn.classList.remove('recording');
+  bigRecBtn.textContent = '🎙';
+  clearInterval(timerInterval);
+  recordTimer.classList.remove('active');
+
+  const text = finalTranscript.trim();
+  if (text) {
+    recordStatus.textContent = '录音完成，可以点击「开始 AI 分析」';
+    analyzeBtn.disabled = false;
+  } else {
+    recordStatus.textContent = '未检测到语音内容，请重新录音';
+    analyzeBtn.disabled = true;
+  }
+}
+
+function updateTimerDisplay() {
+  const min = String(Math.floor(recordSeconds / 60)).padStart(2, '0');
+  const sec = String(recordSeconds % 60).padStart(2, '0');
+  recordTimer.textContent = min + ':' + sec;
 }
 
 function escapeHtml(str) {
@@ -553,71 +466,17 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// ===== 引导问题录音按钮点击 =====
-document.querySelectorAll('.guide-rec-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const key = btn.getAttribute('data-key');
-
-    if (btn.classList.contains('recording')) {
-      // 正在录音 → 停止
-      isRecording = false;
-      btn.classList.remove('recording');
-      btn.textContent = '🎙';
-      try { recognition.stop(); } catch(e) {}
-    } else {
-      // 先停掉其他正在录音的按钮
-      document.querySelectorAll('.guide-rec-btn.recording').forEach(otherBtn => {
-        isRecording = false;
-        otherBtn.classList.remove('recording');
-        otherBtn.textContent = '🎙';
-      });
-
-      // 开始录音
-      if (!recognition) initRecognition();
-
-      isRecording = true;
-      recordingTarget = key;
-      btn.classList.add('recording');
-      btn.textContent = '⏹';
-      finalTranscript = '';
-
-      // 取消跳过状态
-      delete guideSkipped[key];
-      const answerEl = document.getElementById('answer-' + key);
-      answerEl.textContent = '点击开始说话…';
-      answerEl.style.color = '#cc5566';
-      const skipBtn = answerEl.nextElementSibling.nextElementSibling;
-      if (skipBtn) {
-        skipBtn.classList.remove('skipped');
-        skipBtn.textContent = '跳过';
-      }
-
-      try {
-        recognition.start();
-      } catch(e) {
-        console.warn('recognition.start() 异常:', e);
-      }
-    }
-  });
-});
-
 // ===== 开始 AI 分析 =====
 async function submitForAnalysis() {
+  const rawText = finalTranscript.trim();
+  if (!rawText) return;
+
   status.textContent = '正在保存并发送给 AI 分析…';
   analysisDiv.style.display = 'block';
   analysisContent.innerHTML = '<span class="loading">AI 正在思考中…</span>';
 
-  const analyzeBtn = document.getElementById('analyzeBtn');
   analyzeBtn.disabled = true;
   analyzeBtn.textContent = '分析中…';
-
-  // 把所有回答拼成带标签的 raw_text（让 AI 理解每个回答的上下文）
-  const rawText = Object.entries(guideAnswers)
-    .map(([k, v]) => {
-      const label = questionLabels[k] || k;
-      return '【' + label + '】' + v;
-    })
-    .join('\n');
 
   try {
     // 第 1 步：保存到数据库
@@ -627,7 +486,6 @@ async function submitForAnalysis() {
       body: JSON.stringify({
         time: new Date().toLocaleString('zh-CN'),
         raw_text: rawText,
-        structured: JSON.stringify(guideAnswers),
       }),
     });
 
@@ -648,7 +506,6 @@ async function submitForAnalysis() {
       body: JSON.stringify({
         id: saveData.id,
         raw_text: rawText,
-        answers: guideAnswers,
       }),
     });
 
@@ -665,7 +522,6 @@ async function submitForAnalysis() {
         const obj = JSON.parse(analyzeData.analysis);
         let html = '';
 
-        // 新格式：root.surface / root.deep / suggestion / actions
         const root = obj.root || {};
         const suggestion = obj.suggestion || {};
         const scene = obj.scene || {};
@@ -726,10 +582,11 @@ async function submitForAnalysis() {
       status.textContent = '分析完成，但无返回';
     }
 
-    // 显示"再来一条"按钮
+    // 显示"再来一条"按钮，隐藏录音区
     document.getElementById('resetBtn').style.display = 'block';
-    // 隐藏问题和分析按钮
-    guidePanel.style.display = 'none';
+    recordSection.style.display = 'none';
+    document.querySelector('.tips-section').style.display = 'none';
+    analyzeBtn.style.display = 'none';
     analysisDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   } catch (err) {
@@ -744,27 +601,26 @@ async function submitForAnalysis() {
 
 // ===== 再来一条：重置所有状态 =====
 function resetAll() {
-  guideAnswers = {};
-  guideSkipped = {};
   finalTranscript = '';
+  isRecording = false;
+  clearInterval(timerInterval);
+
   analysisDiv.style.display = 'none';
   analysisContent.innerHTML = '';
   status.textContent = '';
-  document.getElementById('resetBtn').style.display = 'none';
-  guidePanel.style.display = 'block';
-  updatePreview();
+  recordStatus.textContent = '';
+  transcriptBox.classList.remove('active');
+  transcriptBox.innerHTML = '';
+  bigRecBtn.classList.remove('recording');
+  bigRecBtn.textContent = '🎙';
+  recordTimer.classList.remove('active');
+  recordTimer.textContent = '00:00';
+  analyzeBtn.disabled = true;
+  analyzeBtn.style.display = '';
 
-  // 重置所有问题状态
-  document.querySelectorAll('.guide-question').forEach(q => q.classList.remove('answered'));
-  document.querySelectorAll('.guide-answer').forEach(a => {
-    a.textContent = '点击 🎙 语音回答';
-    a.classList.remove('has-text');
-    a.style.color = '';
-  });
-  document.querySelectorAll('.guide-skip-btn').forEach(s => {
-    s.classList.remove('skipped');
-    s.textContent = '跳过';
-  });
+  document.getElementById('resetBtn').style.display = 'none';
+  recordSection.style.display = '';
+  document.querySelector('.tips-section').style.display = '';
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }

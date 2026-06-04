@@ -28,7 +28,8 @@ async function initTable() {
       scenario TEXT,
       analysis_structured TEXT,
       type TEXT,
-      scene_detail TEXT
+      scene_detail TEXT,
+      labels TEXT
     )
   `);
 
@@ -39,6 +40,7 @@ async function initTable() {
     'ALTER TABLE mistake_records ADD COLUMN analysis_structured TEXT',
     'ALTER TABLE mistake_records ADD COLUMN type TEXT',
     'ALTER TABLE mistake_records ADD COLUMN scene_detail TEXT',
+    'ALTER TABLE mistake_records ADD COLUMN labels TEXT',
   ];
   for (const sql of migrations) {
     try { await db.execute(sql); } catch(e) {}

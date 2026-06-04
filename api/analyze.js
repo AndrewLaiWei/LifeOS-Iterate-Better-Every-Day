@@ -1,6 +1,6 @@
 // Vercel Serverless Function: /api/analyze
 // AI 错题分析接口（Turso 云数据库版）
-// 支持：原始语音 + 结构化引导回答
+// 接收用户一次性语音口述，AI 综合分析 + 自动打标签
 
 const OpenAI = require('openai');
 const { db, initTable } = require('./db');
@@ -11,12 +11,10 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { id, raw_text, answers } = req.body;
+    const { id, raw_text } = req.body;
 
-    // 有 answers 或 raw_text 至少一个即可
-    const hasAnswers = answers && typeof answers === 'object' && Object.keys(answers).length > 0;
-    if (!raw_text && !hasAnswers) {
-      return res.status(400).json({ error: '缺少 raw_text 或 answers 参数' });
+    if (!raw_text) {
+      return res.status(400).json({ error: '缺少 raw_text 参数' });
     }
 
     await initTable();
@@ -31,41 +29,51 @@ module.exports = async (req, res) => {
       baseURL: process.env.LLM_BASE_URL || undefined,
     });
 
-    // 构建 prompt：从 raw_text 和 answers 中提取信息
-    const parts = [];
+    const prompt = `你是一位专业的错题分析教练。用户会一次性口述一次失误经历，可能包含事件经过、行为、想法、后果、改进计划等内容。
 
-    if (raw_text) {
-      parts.push('【用户原始口述】\n' + raw_text);
-    }
+⚠️ 关键要求：
+1. 你必须从用户的口述中提取所有维度的信息，不能遗漏
+2. 用户的口述是连续的，可能按任意顺序提到以下内容：发生了什么事、做了什么、怎么想的、后果、以后打算怎么做
+3. 如果某个维度用户没提到，根据已有信息合理推断，不要留空
 
-    if (hasAnswers) {
-      if (answers.event) parts.push('【发生了什么事】\n' + answers.event);
-      if (answers.action) parts.push('【当时做了什么】\n' + answers.action);
-      if (answers.thought) parts.push('【当时是怎么想的】\n' + answers.thought);
-      if (answers.consequence) parts.push('【导致了什么后果】\n' + answers.consequence);
-      if (answers.plan) parts.push('【以后打算怎么做】\n' + answers.plan);
-    }
+用户口述：
+${raw_text}
 
-    const inputText = parts.join('\n\n');
+请返回JSON格式（不要加任何解释文字，纯JSON）：
+{
+  "type": "错题类型（沟通冲突/情绪失控/时间管理/技能不足/认知盲区 之一）",
+  "scene": {
+    "time": "发生错误的星期（周一/周二/周三/周四/周五/周末）",
+    "period": "发生时段（上午/下午/夜间/周末）",
+    "object": "涉及对象（上级/同级/客户/亲友/其他）",
+    "env": "环境（线下/线上/公开场合/私下）",
+    "pressure": "压力水平（高/中/低）"
+  },
+  "root": {
+    "surface": "表层原因（1-2句话）",
+    "deep": "深层原因（2-3句话，说明认知偏误或情绪模式）",
+    "biases": ["认知偏误名称"]
+  },
+  "suggestion": {
+    "strategy": "改进策略（具体可执行，3-5句话）",
+    "method": "可练习的方法名称（如：三问法、外部大脑法）"
+  },
+  "actions": ["下次行动1", "下次行动2", "下次行动3"],
+  "labels": {
+    "emotion": ["涉及的核心情绪，1-3个，从以下选取：愤怒/焦虑/恐惧/沮丧/烦躁/冲动/犹豫/侥幸/自责/委屈/无感"],
+    "severity": "严重程度（轻微/中等/严重/关键）",
+    "recurrenceRisk": "再发风险（高/中/低）",
+    "domain": ["涉及的生活领域，1-2个，从以下选取：工作/生活/人际关系/健康/财务/学习/家庭"],
+    "pattern": ["行为模式，1-2个，从以下选取：逃避/对抗/拖延/冲动/盲从/过度准备/事后后悔/自以为是"]
+  }
+}
 
-    const prompt = `你是一位专业的错题分析教练。请用5WHY+PDCA方法分析以下失误：
-
-${inputText}
-
-请返回JSON格式：
-{"eventRecord":"","surfaceCause":"","behavioralAnalysis":"","deepCause":"","cognitiveBias":"","improvementSuggestions":[],"actionChecklist":[],"longTermValue":"","category":"","scenario":""}
-
-要求：
-- eventRecord：用客观、简洁的语言记录事件经过
-- surfaceCause：直接导致失误的表面原因
-- behavioralAnalysis：从行为模式角度分析
-- deepCause：用5WHY深挖根本原因
-- cognitiveBias：识别涉及的认知偏差（如确认偏差、锚定效应等）
-- improvementSuggestions：2-4条具体的改进建议
-- actionChecklist：2-4条可执行的行动项
-- longTermValue：从这次失误中能获得的长期价值
-- category：从以下5种错题类型中选最匹配的1种（只能选1种）：沟通失误、决策偏差、情绪失控、知识盲区、执行力问题
-- scenario：提取2-3个场景标签，用逗号分隔，如"工作,团队协作,客户沟通"`;
+⚠️ labels 是棱镜分析的核心数据，必须认真填写：
+- emotion：识别口述中隐含的情绪，即使用户没直说也要推断
+- severity：根据后果影响范围和不可逆程度判断
+- recurrenceRisk：根据行为模式是否根深蒂固判断
+- domain：这件事主要发生在哪个生活领域
+- pattern：用户犯了什么行为模式的错误（不是表面错误，是底层模式）`;
 
     const response = await ai.chat.completions.create({
       model: process.env.LLM_MODEL || 'gpt-4o',
@@ -85,19 +93,24 @@ ${inputText}
       clean = clean.trim();
     }
 
-    // 保存分析结果到数据库（同时存 analysis_structured + type + scene_detail）
+    // 保存分析结果到数据库（含 labels）
     if (id) {
       let category = null;
       let scenario = null;
       let structured = null;
       let type = null;
       let sceneDetail = null;
+      let labels = null;
       try {
         const parsed = JSON.parse(clean);
         category = parsed.category || null;
         scenario = parsed.scenario || null;
         type = parsed.type || category || null;
-        // 构建 structured 格式（与 server.js 一致）
+        // 提取 labels
+        if (parsed.labels) {
+          labels = JSON.stringify(parsed.labels);
+        }
+        // 构建 structured 格式
         if (parsed.root) {
           structured = JSON.stringify(parsed);
           sceneDetail = parsed.scene ? JSON.stringify(parsed.scene) : null;
@@ -115,7 +128,8 @@ ${inputText}
               strategy: (parsed.improvementSuggestions || []).join('；'),
               method: parsed.longTermValue || ''
             },
-            actions: parsed.actionChecklist || []
+            actions: parsed.actionChecklist || [],
+            labels: parsed.labels || null
           });
           type = parsed.category || null;
         }
@@ -123,8 +137,13 @@ ${inputText}
         // 解析失败不影响主流程
       }
       await db.execute({
-        sql: 'UPDATE mistake_records SET analysis_json = ?, analysis_structured = ?, type = COALESCE(?, type), category = COALESCE(?, category), scenario = COALESCE(?, scenario), scene_detail = COALESCE(?, scene_detail) WHERE id = ?',
-        args: [clean, structured, type, category, scenario, sceneDetail, id],
+        sql: `UPDATE mistake_records
+              SET analysis_json = ?, analysis_structured = ?,
+                  type = COALESCE(?, type), category = COALESCE(?, category),
+                  scenario = COALESCE(?, scenario), scene_detail = COALESCE(?, scene_detail),
+                  labels = COALESCE(?, labels)
+              WHERE id = ?`,
+        args: [clean, structured, type, category, scenario, sceneDetail, labels, id],
       });
     }
 

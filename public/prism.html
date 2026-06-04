@@ -162,6 +162,7 @@
   .analysis-block-title.teal   { color: var(--teal-400); }
   .analysis-block-title.amber  { color: var(--amber-400); }
   .analysis-block-title.blue   { color: var(--blue-400); }
+  .analysis-block-title.coral  { color: var(--coral-400); }
   .analysis-block p { font-size: 13px; color: rgba(255,255,255,0.6); line-height: 1.7; }
   .bias-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .bias-tag {
@@ -182,6 +183,22 @@
     font-size: 11px; padding: 3px 9px; border-radius: 5px;
     background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.45);
   }
+
+  /* ── LABEL TAGS ── */
+  .label-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 12px; padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .label-tag {
+    font-size: 11px; padding: 3px 10px; border-radius: 100px;
+    font-weight: 500;
+  }
+  .label-tag.emotion   { background: rgba(216,90,48,0.12); color: var(--coral-400); }
+  .label-tag.severity  { background: rgba(186,117,23,0.12); color: var(--amber-400); }
+  .label-tag.risk      { background: rgba(127,119,221,0.12); color: var(--purple-200); }
+  .label-tag.domain    { background: rgba(55,138,221,0.12); color: var(--blue-400); }
+  .label-tag.pattern   { background: rgba(29,158,117,0.12); color: var(--teal-400); }
 
   /* ── HEATMAP ── */
   .heatmap-section { background: #0d0d0d; }
@@ -283,6 +300,46 @@
   }
   .filter-select option { background: #1a1a2e; color: rgba(255,255,255,0.8); }
 
+  /* ── LABEL AGGREGATION ── */
+  .label-aggregate-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px; margin-top: 32px;
+  }
+  .label-category-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 14px; padding: 24px;
+  }
+  .label-category-title {
+    font-size: 13px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 16px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .label-bar-list { display: flex; flex-direction: column; gap: 10px; }
+  .label-bar-item {
+    display: flex; align-items: center; gap: 12px;
+  }
+  .label-bar-name {
+    font-size: 13px; color: rgba(255,255,255,0.7);
+    min-width: 72px; text-align: right;
+  }
+  .label-bar-track {
+    flex: 1; height: 24px; background: rgba(255,255,255,0.04);
+    border-radius: 6px; overflow: hidden; position: relative;
+  }
+  .label-bar-fill {
+    height: 100%; border-radius: 6px;
+    transition: width 0.6s ease;
+    display: flex; align-items: center; padding-left: 10px;
+    font-size: 12px; font-weight: 600; color: var(--white);
+    min-width: 32px;
+  }
+  .label-bar-fill.emotion   { background: linear-gradient(90deg, rgba(216,90,48,0.6), rgba(216,90,48,0.85)); }
+  .label-bar-fill.severity  { background: linear-gradient(90deg, rgba(186,117,23,0.6), rgba(186,117,23,0.85)); }
+  .label-bar-fill.risk      { background: linear-gradient(90deg, rgba(127,119,221,0.6), rgba(127,119,221,0.85)); }
+  .label-bar-fill.domain    { background: linear-gradient(90deg, rgba(55,138,221,0.6), rgba(55,138,221,0.85)); }
+  .label-bar-fill.pattern   { background: linear-gradient(90deg, rgba(29,158,117,0.6), rgba(29,158,117,0.85)); }
+
   /* ── LOADING ── */
   .loading-msg {
     text-align: center; padding: 60px 0; color: rgba(255,255,255,0.3);
@@ -301,6 +358,7 @@
     .profile-grid { grid-template-columns: 1fr; }
     .heatmap-grid { overflow-x: auto; }
     .chart-container { padding: 16px; min-height: 280px; }
+    .label-aggregate-grid { grid-template-columns: 1fr; }
   }
 
   /* ── FADE-IN ── */
@@ -334,6 +392,7 @@
     <button class="tab-btn active" onclick="switchTab('cards', this)">🃏 错题卡片</button>
     <button class="tab-btn" onclick="switchTab('heatmap', this)">🗺️ 场景热力图</button>
     <button class="tab-btn" onclick="switchTab('curve', this)">📈 成长曲线</button>
+    <button class="tab-btn" onclick="switchTab('labels', this)">🏷️ 标签聚合</button>
     <button class="tab-btn" onclick="switchTab('profile', this)">🧠 用户画像</button>
   </div>
 </div>
@@ -362,6 +421,25 @@
         <option value="同级">同级</option>
         <option value="客户">客户</option>
         <option value="亲友">亲友</option>
+      </select>
+      <select class="filter-select" id="filterEmotion" onchange="renderCards()">
+        <option value="">全部情绪</option>
+        <option value="愤怒">愤怒</option>
+        <option value="焦虑">焦虑</option>
+        <option value="恐惧">恐惧</option>
+        <option value="沮丧">沮丧</option>
+        <option value="烦躁">烦躁</option>
+        <option value="冲动">冲动</option>
+      </select>
+      <select class="filter-select" id="filterDomain" onchange="renderCards()">
+        <option value="">全部领域</option>
+        <option value="工作">工作</option>
+        <option value="生活">生活</option>
+        <option value="人际关系">人际关系</option>
+        <option value="健康">健康</option>
+        <option value="财务">财务</option>
+        <option value="学习">学习</option>
+        <option value="家庭">家庭</option>
       </select>
     </div>
 
@@ -427,11 +505,25 @@
 </section>
 
 <!-- ============================================ -->
-<!-- TAB 4: 用户画像 -->
+<!-- TAB 4: 标签聚合 -->
+<!-- ============================================ -->
+<section id="tab-labels" class="tab-panel">
+  <div class="section-inner">
+    <div class="section-label">模块四</div>
+    <h2 class="section-title fade-in">标签聚合</h2>
+    <p class="section-sub fade-in">AI 自动为每条错题打上多维标签，帮你看清自己犯错的情绪模式、行为模式和风险领域。</p>
+    <div class="label-aggregate-grid" id="labelAggregateGrid">
+      <div class="loading-msg" style="grid-column:1/-1;">正在加载标签数据…</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- TAB 5: 用户画像 -->
 <!-- ============================================ -->
 <section id="tab-profile" class="profile-section">
   <div class="section-inner">
-    <div class="section-label">模块四</div>
+    <div class="section-label">模块五</div>
     <h2 class="section-title fade-in">用户成长画像</h2>
     <p class="section-sub fade-in">基于你的错题历史，AI 生成个人成长画像，清晰呈现优势与弱项。</p>
     <div class="profile-grid fade-in">
@@ -478,6 +570,7 @@ function switchTab(name, btn) {
   if (name === 'cards')   loadCards();
   if (name === 'heatmap') loadHeatmap();
   if (name === 'curve')   loadCurve();
+  if (name === 'labels')  loadLabels();
   if (name === 'profile') loadProfile();
 }
 
@@ -513,14 +606,24 @@ function updateStatsFromCards(cards) {
 }
 
 function renderCards() {
-  const filterType  = document.getElementById('filterType').value;
-  const filterScene = document.getElementById('filterScene').value;
+  const filterType    = document.getElementById('filterType').value;
+  const filterScene   = document.getElementById('filterScene').value;
+  const filterEmotion = document.getElementById('filterEmotion').value;
+  const filterDomain  = document.getElementById('filterDomain').value;
   const list = document.getElementById('cardList');
   const colors = ['purple','teal','amber','blue'];
 
   let filtered = allCards;
-  if (filterType)  filtered = filtered.filter(c => c.type === filterType);
-  if (filterScene) filtered = filtered.filter(c => c.scene && c.scene.object === filterScene);
+  if (filterType)    filtered = filtered.filter(c => c.type === filterType);
+  if (filterScene)   filtered = filtered.filter(c => c.scene && c.scene.object === filterScene);
+  if (filterEmotion) filtered = filtered.filter(c => {
+    const em = (c.labels && c.labels.emotion) || [];
+    return em.includes(filterEmotion);
+  });
+  if (filterDomain)  filtered = filtered.filter(c => {
+    const dm = (c.labels && c.labels.domain) || [];
+    return dm.includes(filterDomain);
+  });
 
   if (filtered.length === 0) {
     list.innerHTML = '<div class="empty-msg">暂无匹配的错题记录<br><span style="font-size:12px;color:rgba(255,255,255,0.2);">去首页记录一条新错题吧</span></div>';
@@ -530,11 +633,18 @@ function renderCards() {
   list.innerHTML = filtered.map((card, i) => {
     const color = colors[i % colors.length];
     const isExpanded = expandedCards.has(card.id);
-    const root   = card.root || {};
-    const sugg   = card.suggestion || {};
-    const scene  = card.scene || {};
+    const root    = card.root || {};
+    const sugg    = card.suggestion || {};
+    const scene   = card.scene || {};
     const actions = card.actions || [];
-    const biases = root.biases || [];
+    const biases  = root.biases || [];
+    const labels  = card.labels || {};
+    const emotion    = labels.emotion || [];
+    const severity   = labels.severity || '';
+    const risk       = labels.recurrenceRisk || '';
+    const domain     = labels.domain || [];
+    const pattern    = labels.pattern || [];
+
     return `
       <div class="mistake-card ${color} fade-in" style="animation-delay:${i*0.08}s">
         <div class="card-header">
@@ -549,6 +659,14 @@ function renderCards() {
           <div class="card-raw-label">原始记录</div>
           ${escapeHtml(card.raw ? card.raw.content : '')}
         </div>
+        ${emotion.length || severity || risk || domain.length || pattern.length ? `
+        <div class="label-tags">
+          ${emotion.map(e => `<span class="label-tag emotion">😢 ${escapeHtml(e)}</span>`).join('')}
+          ${severity ? `<span class="label-tag severity">⚠️ ${escapeHtml(severity)}</span>` : ''}
+          ${risk ? `<span class="label-tag risk">🔄 ${escapeHtml(risk)}再发</span>` : ''}
+          ${domain.map(d => `<span class="label-tag domain">📍 ${escapeHtml(d)}</span>`).join('')}
+          ${pattern.map(p => `<span class="label-tag pattern">🔁 ${escapeHtml(p)}</span>`).join('')}
+        </div>` : ''}
         <div class="card-analysis ${isExpanded ? '' : 'collapsed'}">
           <div class="analysis-block">
             <div class="analysis-block-title ${color}">根本原因</div>
@@ -707,7 +825,6 @@ function renderGrowthChart(data) {
     }
   });
 
-  // 更新统计数字
   if (datasets.length > 0) {
     const lastVals = datasets.map(ds => ds.data[ds.data.length - 1]);
     const avg = Math.round(lastVals.reduce((a,b)=>a+b,0) / lastVals.length);
@@ -722,7 +839,89 @@ function renderGrowthChart(data) {
 }
 
 // ═══════════════════════════════════════════
-//  TAB 4: 用户画像（真实 API）
+//  TAB 4: 标签聚合
+// ═══════════════════════════════════════════
+async function loadLabels() {
+  const grid = document.getElementById('labelAggregateGrid');
+  grid.innerHTML = '<div class="loading-msg" style="grid-column:1/-1;">正在加载标签数据…</div>';
+
+  // 确保 cards 已加载
+  if (allCards.length === 0) {
+    try {
+      const res = await fetch(`${API_BASE}/api/prism/cards`);
+      if (res.ok) allCards = await res.json();
+    } catch(e) {}
+  }
+
+  if (allCards.length === 0) {
+    grid.innerHTML = '<div class="empty-msg" style="grid-column:1/-1;">暂无错题数据，请先记录一条错题</div>';
+    return;
+  }
+
+  renderLabelAggregation(allCards);
+}
+
+function renderLabelAggregation(cards) {
+  const grid = document.getElementById('labelAggregateGrid');
+
+  // 聚合各维度标签计数
+  const emotionCounts = {};
+  const severityCounts = {};
+  const riskCounts = {};
+  const domainCounts = {};
+  const patternCounts = {};
+
+  cards.forEach(card => {
+    const labels = card.labels || {};
+    (labels.emotion || []).forEach(e => { emotionCounts[e] = (emotionCounts[e] || 0) + 1; });
+    if (labels.severity) severityCounts[labels.severity] = (severityCounts[labels.severity] || 0) + 1;
+    if (labels.recurrenceRisk) riskCounts[labels.recurrenceRisk] = (riskCounts[labels.recurrenceRisk] || 0) + 1;
+    (labels.domain || []).forEach(d => { domainCounts[d] = (domainCounts[d] || 0) + 1; });
+    (labels.pattern || []).forEach(p => { patternCounts[p] = (patternCounts[p] || 0) + 1; });
+  });
+
+  const categories = [
+    { title: '😢 情绪标签', items: emotionCounts, cssClass: 'emotion', order: ['愤怒','焦虑','恐惧','沮丧','烦躁','冲动','犹豫','侥幸','自责','委屈','无感'] },
+    { title: '⚠️ 严重程度', items: severityCounts, cssClass: 'severity', order: ['轻微','中等','严重','关键'] },
+    { title: '🔄 再发风险', items: riskCounts, cssClass: 'risk', order: ['高','中','低'] },
+    { title: '📍 生活领域', items: domainCounts, cssClass: 'domain', order: ['工作','生活','人际关系','健康','财务','学习','家庭'] },
+    { title: '🔁 行为模式', items: patternCounts, cssClass: 'pattern', order: ['逃避','对抗','拖延','冲动','盲从','过度准备','事后后悔','自以为是'] },
+  ];
+
+  grid.innerHTML = categories.map(cat => {
+    const entries = Object.entries(cat.items);
+    if (entries.length === 0) return '';
+    // 按预定义顺序排序，未在列表中的排最后
+    entries.sort((a, b) => {
+      const ia = cat.order.indexOf(a[0]);
+      const ib = cat.order.indexOf(b[0]);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    });
+    const maxCount = Math.max(...entries.map(e => e[1]), 1);
+
+    return `
+      <div class="label-category-card fade-in">
+        <div class="label-category-title">${cat.title}</div>
+        <div class="label-bar-list">
+          ${entries.map(([name, count]) => {
+            const pct = Math.round((count / maxCount) * 100);
+            return `
+              <div class="label-bar-item">
+                <div class="label-bar-name">${escapeHtml(name)}</div>
+                <div class="label-bar-track">
+                  <div class="label-bar-fill ${cat.cssClass}" style="width:${pct}%;">${count}</div>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════
+//  TAB 5: 用户画像（真实 API）
 // ═══════════════════════════════════════════
 async function loadProfile() {
   const sl = document.getElementById('strengthList');
@@ -793,7 +992,14 @@ function getFallbackCards() {
       scene: { time: "周三", period: "下午", object: "上级", env: "线下会议室", pressure: "高" },
       root: { surface: "汇报时把竞品数据说反", deep: "认知捷径：在高压场景下，大脑倾向于提取'最熟悉的数字'而非'最准确的数据'。", biases: ["确认偏误"] },
       suggestion: { strategy: "建立'汇报前三核对'标准动作。", method: "三秒停顿法" },
-      actions: ["汇报前30分钟手动画出数据时间轴", "高压场景启用'慢呼吸'3次再开口"]
+      actions: ["汇报前30分钟手动画出数据时间轴", "高压场景启用'慢呼吸'3次再开口"],
+      labels: {
+        emotion: ["焦虑", "冲动"],
+        severity: "中等",
+        recurrenceRisk: "中",
+        domain: ["工作", "人际关系"],
+        pattern: ["冲动", "过度准备"]
+      }
     }
   ];
 }

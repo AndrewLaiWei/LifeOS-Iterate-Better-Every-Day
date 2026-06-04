@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
 
   try {
     const result = await db.execute(`
-      SELECT id, created_at, raw_text, type, scene_detail, analysis_structured, analysis_json
+      SELECT id, created_at, raw_text, type, scene_detail, analysis_structured, analysis_json, labels
       FROM mistake_records
       WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
       ORDER BY created_at DESC
@@ -23,6 +23,7 @@ module.exports = async (req, res) => {
       let root = analysis.root || { surface: '', deep: '', biases: [] };
       let suggestion = analysis.suggestion || { strategy: '', method: '' };
       let actions = analysis.actions || [];
+      let parsedLabels = null;
       if (!analysis.root && row.analysis_json) {
         try {
           const old = JSON.parse(row.analysis_json);
@@ -36,7 +37,16 @@ module.exports = async (req, res) => {
             method: old.longTermValue || ''
           };
           actions = old.actionChecklist || [];
+          if (old.labels) parsedLabels = old.labels;
         } catch(e) {}
+      }
+      // 解析 labels（从 analysis_structured 或独立 labels 字段）
+      if (!parsedLabels) {
+        if (analysis.labels) {
+          parsedLabels = analysis.labels;
+        } else if (row.labels) {
+          try { parsedLabels = JSON.parse(row.labels); } catch(e) {}
+        }
       }
       return {
         id: 'mk-' + row.id,
@@ -49,7 +59,8 @@ module.exports = async (req, res) => {
         scene: scene,
         root: root,
         suggestion: suggestion,
-        actions: actions
+        actions: actions,
+        labels: parsedLabels
       };
     });
 
