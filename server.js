@@ -173,30 +173,95 @@ app.get('/api/prism/heatmap', async (req, res) => {
 app.get('/api/prism/curve', async (req, res) => {
   try {
     const result = await db.execute(`
-      SELECT created_at, type, analysis_structured FROM mistake_records
+      SELECT id, created_at, type, analysis_structured, labels
+      FROM mistake_records
       WHERE analysis_structured IS NOT NULL OR analysis_json IS NOT NULL
       ORDER BY created_at ASC
     `);
     if (result.rows.length === 0) {
-      return res.json({ labels: [], datasets: [] });
+      return res.json({ labels: [], datasets: [], severityDatasets: [], cumulativeDatasets: [], stats: { total: 0, improved: 0, topType: '', avgSeverity: '' } });
     }
-    const weekMap = {};
-    result.rows.forEach(row => {
+    const rows = result.rows;
+
+    // ── 智能时间粒度 ──
+    const firstDate = new Date(rows[0].created_at);
+    const lastDate = new Date(rows[rows.length - 1].created_at);
+    const daySpan = Math.round((lastDate - firstDate) / 86400000);
+    const useDaily = daySpan <= 14;
+
+    const parsed = rows.map(row => {
+      let analysis = {};
+      try { analysis = JSON.parse(row.analysis_structured || '{}'); } catch(e) {}
+      let parsedLabels = null;
+      if (analysis.labels) parsedLabels = analysis.labels;
+      if (!parsedLabels && row.labels) {
+        try { parsedLabels = JSON.parse(row.labels); } catch(e) {}
+      }
       const d = new Date(row.created_at);
-      const weekKey = getWeekKey(d);
-      if (!weekMap[weekKey]) weekMap[weekKey] = {};
-      const type = row.type || '未分类';
-      if (!weekMap[weekKey][type]) weekMap[weekKey][type] = 0;
-      weekMap[weekKey][type]++;
+      let timeKey;
+      if (useDaily) {
+        timeKey = `${d.getMonth()+1}/${d.getDate()}`;
+      } else {
+        const jan1 = new Date(d.getFullYear(), 0, 1);
+        const weekNum = Math.ceil((((d - jan1) / 86400000) + jan1.getDay() + 1) / 7);
+        timeKey = `W${weekNum}`;
+      }
+      return { timeKey, date: d, type: row.type || analysis.type || '未分类', severity: parsedLabels ? parsedLabels.severity : '', domain: parsedLabels ? (parsedLabels.domain || []) : [], pattern: parsedLabels ? (parsedLabels.pattern || []) : [] };
     });
-    const weeks = Object.keys(weekMap).sort();
-    const allTypes = [...new Set(result.rows.map(r => r.type || '未分类'))];
-    const datasets = allTypes.map(type => ({
+
+    const allTimeKeys = [...new Set(parsed.map(p => p.timeKey))];
+    const timeKeyOrder = {};
+    parsed.forEach(p => { if (!timeKeyOrder[p.timeKey]) timeKeyOrder[p.timeKey] = p.date.getTime(); });
+    allTimeKeys.sort((a, b) => timeKeyOrder[a] - timeKeyOrder[b]);
+
+    const allTypes = [...new Set(parsed.map(p => p.type))];
+    const typeTimeMap = {};
+    parsed.forEach(p => {
+      if (!typeTimeMap[p.timeKey]) typeTimeMap[p.timeKey] = {};
+      if (!typeTimeMap[p.timeKey][p.type]) typeTimeMap[p.timeKey][p.type] = 0;
+      typeTimeMap[p.timeKey][p.type]++;
+    });
+    const typeDatasets = allTypes.map(type => ({
       label: type,
-      values: weeks.map(w => weekMap[w][type] || 0),
+      values: allTimeKeys.map(k => (typeTimeMap[k] && typeTimeMap[k][type]) || 0),
       color: getColorForType(type)
     }));
-    res.json({ labels: weeks, datasets });
+
+    // 累计趋势
+    const totalPerTime = allTimeKeys.map(k => { let sum = 0; allTypes.forEach(t => { sum += (typeTimeMap[k] && typeTimeMap[k][t]) || 0; }); return sum; });
+    let cumSum = 0;
+    const cumulative = totalPerTime.map(v => { cumSum += v; return cumSum; });
+    const cumulativeDatasets = [{ label: '累计错题', values: cumulative, color: '#7F77DD' }];
+
+    // 严重度分布
+    const SEVERITY_ORDER = ['轻微', '轻', '中', '较重', '重', '严重'];
+    const severitySort = (a, b) => (SEVERITY_ORDER.indexOf(a) === -1 ? 99 : SEVERITY_ORDER.indexOf(a)) - (SEVERITY_ORDER.indexOf(b) === -1 ? 99 : SEVERITY_ORDER.indexOf(b));
+    const allSeverities = [...new Set(parsed.filter(p => p.severity).map(p => p.severity))].sort(severitySort);
+    const sevTimeMap = {};
+    parsed.forEach(p => { if (!p.severity) return; if (!sevTimeMap[p.timeKey]) sevTimeMap[p.timeKey] = {}; if (!sevTimeMap[p.timeKey][p.severity]) sevTimeMap[p.timeKey][p.severity] = 0; sevTimeMap[p.timeKey][p.severity]++; });
+    const severityColorMap = { '轻微': '#1D9E75', '轻': '#1D9E75', '中': '#BA7517', '较重': '#D85A30', '重': '#D85A30', '严重': '#cc2233' };
+    const severityDatasets = allSeverities.map(sev => ({ label: sev, values: allTimeKeys.map(k => (sevTimeMap[k] && sevTimeMap[k][sev]) || 0), color: severityColorMap[sev] || '#7F77DD' }));
+
+    // 统计指标
+    const totalCount = parsed.length;
+    const typeCountMap = {};
+    parsed.forEach(p => { typeCountMap[p.type] = (typeCountMap[p.type] || 0) + 1; });
+    const topType = Object.entries(typeCountMap).sort((a,b) => b[1] - a[1])[0];
+    let improvedCount = 0;
+    if (allTimeKeys.length >= 2) {
+      const firstKey = allTimeKeys[0], lastKey = allTimeKeys[allTimeKeys.length - 1];
+      allTypes.forEach(type => {
+        const firstVal = (typeTimeMap[firstKey] && typeTimeMap[firstKey][type]) || 0;
+        const lastVal = (typeTimeMap[lastKey] && typeTimeMap[lastKey][type]) || 0;
+        if (firstVal > 0 && lastVal < firstVal * 0.5) improvedCount++;
+      });
+    }
+    const sevScores = { '轻微': 1, '轻': 1, '中': 2, '较重': 3, '重': 3, '严重': 4 };
+    const sevVals = parsed.filter(p => p.severity && sevScores[p.severity]).map(p => sevScores[p.severity]);
+    const avgSeverity = sevVals.length > 0 ? (sevVals.reduce((a,b) => a+b, 0) / sevVals.length).toFixed(1) : '—';
+    const allDomains = [...new Set(parsed.flatMap(p => p.domain))];
+
+    res.json({ labels: allTimeKeys, datasets: typeDatasets, cumulativeDatasets, severityDatasets, stats: { total: totalCount, improved: improvedCount, topType: topType ? topType[0] : '—', topTypeCount: topType ? topType[1] : 0, avgSeverity, domainCount: allDomains.length, timeRange: useDaily ? 'daily' : 'weekly', dateSpan: daySpan } });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

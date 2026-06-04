@@ -237,10 +237,17 @@
   .chart-container {
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px; padding: 32px; margin-top: 32px;
+    border-radius: 16px; padding: 32px; margin-top: 16px;
     position: relative; min-height: 360px;
   }
   .chart-container canvas { width: 100% !important; height: 100% !important; }
+  .curve-tab {
+    padding: 8px 16px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+    background: transparent; color: rgba(255,255,255,0.5); font-size: 13px;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .curve-tab:hover { border-color: rgba(127,119,221,0.4); color: rgba(255,255,255,0.7); }
+  .curve-tab.active { background: rgba(127,119,221,0.15); border-color: rgba(127,119,221,0.4); color: #AFA9EC; }
 
   /* ── PROFILE ── */
   .profile-section { }
@@ -482,23 +489,43 @@
   <div class="section-inner">
     <div class="section-label">模块三</div>
     <h2 class="section-title fade-in">成长曲线</h2>
-    <p class="section-sub fade-in">同一类错题的重复率下降趋势，让你肉眼看到进化。数据不会说谎。</p>
-    <div class="chart-container fade-in" id="chartContainer">
+    <p class="section-sub fade-in">各类型错题趋势 + 严重度分布 + 累计进化线，数据不会说谎。</p>
+
+    <!-- 统计卡片 -->
+    <div style="display:flex; gap:20px; margin-top:28px; flex-wrap:wrap;" class="fade-in">
+      <div class="stat-card" style="flex:1; min-width:140px; background:rgba(83,74,183,0.08); border:1px solid rgba(127,119,221,0.15); border-radius:12px; padding:20px;">
+        <div style="font-size:11px; color:rgba(255,255,255,0.35); letter-spacing:1px; margin-bottom:8px;">总错题数</div>
+        <div style="font-size:32px; font-weight:700; color:var(--purple-400); letter-spacing:-1px;" id="statTotal">—</div>
+      </div>
+      <div class="stat-card" style="flex:1; min-width:140px; background:rgba(29,158,117,0.08); border:1px solid rgba(29,158,117,0.15); border-radius:12px; padding:20px;">
+        <div style="font-size:11px; color:rgba(255,255,255,0.35); letter-spacing:1px; margin-bottom:8px;">已改进类型</div>
+        <div style="font-size:32px; font-weight:700; color:var(--teal-400); letter-spacing:-1px;" id="statImproved">—</div>
+      </div>
+      <div class="stat-card" style="flex:1; min-width:140px; background:rgba(186,117,23,0.08); border:1px solid rgba(186,117,23,0.15); border-radius:12px; padding:20px;">
+        <div style="font-size:11px; color:rgba(255,255,255,0.35); letter-spacing:1px; margin-bottom:8px;">高发类型</div>
+        <div style="font-size:18px; font-weight:700; color:var(--amber-400); letter-spacing:-0.5px; margin-top:4px;" id="statTopType">—</div>
+      </div>
+      <div class="stat-card" style="flex:1; min-width:140px; background:rgba(216,90,48,0.08); border:1px solid rgba(216,90,48,0.15); border-radius:12px; padding:20px;">
+        <div style="font-size:11px; color:rgba(255,255,255,0.35); letter-spacing:1px; margin-bottom:8px;">平均严重度</div>
+        <div style="font-size:32px; font-weight:700; color:var(--coral-400); letter-spacing:-1px;" id="statAvgSev">—</div>
+      </div>
+    </div>
+
+    <!-- 图表切换 -->
+    <div style="display:flex; gap:8px; margin-top:28px; margin-bottom:16px;" class="fade-in">
+      <button class="curve-tab active" onclick="switchCurveView('type', this)">📊 类型趋势</button>
+      <button class="curve-tab" onclick="switchCurveView('cumulative', this)">📈 累计进化</button>
+      <button class="curve-tab" onclick="switchCurveView('severity', this)">⚠️ 严重度分布</button>
+    </div>
+
+    <!-- 图表 -->
+    <div class="chart-container fade-in" id="chartContainer" style="position:relative; min-height:320px;">
       <canvas id="growthChart"></canvas>
       <div id="chartLoading" class="loading-msg" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">正在加载曲线数据…</div>
-    </div>
-    <div style="display:flex; gap:32px; margin-top:32px; flex-wrap:wrap;">
-      <div style="flex:1; min-width:200px;">
-        <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:8px;">总错题数</div>
-        <div style="font-size:36px; font-weight:700; color:var(--purple-400); letter-spacing:-1px;" id="statTotal">—</div>
-      </div>
-      <div style="flex:1; min-width:200px;">
-        <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:8px;">已改进类型</div>
-        <div style="font-size:36px; font-weight:700; color:var(--teal-400); letter-spacing:-1px;" id="statImproved">—</div>
-      </div>
-      <div style="flex:1; min-width:200px;">
-        <div style="font-size:12px; color:rgba(255,255,255,0.35); margin-bottom:8px;">整体重复率</div>
-        <div style="font-size:36px; font-weight:700; color:var(--amber-400); letter-spacing:-1px;" id="statRepeat">—</div>
+      <div id="chartEmpty" style="display:none; position:absolute;inset:0; display:none; flex-direction:column; align-items:center; justify-content:center; gap:12px;">
+        <div style="font-size:48px;">📈</div>
+        <div style="font-size:15px; color:rgba(255,255,255,0.4);">记录越多，曲线越清晰</div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.25);">至少需要2条不同日期的错题记录</div>
       </div>
     </div>
   </div>
@@ -596,13 +623,7 @@ async function loadCards() {
 }
 
 function updateStatsFromCards(cards) {
-  document.getElementById('statTotal').textContent = cards.length;
-  const improved = cards.filter(c => {
-    const acts = c.actions || [];
-    return acts.length > 0;
-  }).length;
-  document.getElementById('statImproved').textContent = improved;
-  document.getElementById('statRepeat').textContent = cards.length > 0 ? Math.round(Math.random()*30+15) + '%' : '—';
+  // 统计已由成长曲线API驱动，这里不覆盖
 }
 
 function renderCards() {
@@ -744,11 +765,23 @@ function renderHeatmap(data) {
 }
 
 // ═══════════════════════════════════════════
-//  TAB 3: 成长曲线（真实 API）
+//  TAB 3: 成长曲线（真实 API + 多视图）
 // ═══════════════════════════════════════════
+let _curveData = null;
+let _curveView = 'type';
+
+function switchCurveView(view, btn) {
+  _curveView = view;
+  document.querySelectorAll('.curve-tab').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (_curveData) renderGrowthChart(_curveData);
+}
+
 async function loadCurve() {
   const loading = document.getElementById('chartLoading');
   if (loading) loading.style.display = 'flex';
+  const empty = document.getElementById('chartEmpty');
+  if (empty) empty.style.display = 'none';
 
   let data;
   try {
@@ -756,9 +789,10 @@ async function loadCurve() {
     if (!res.ok) throw new Error('API 错误');
     data = await res.json();
   } catch (e) {
-    console.warn('成长曲线 API 失败，使用模拟数据:', e.message);
-    data = getFallbackCurve();
+    console.warn('成长曲线 API 失败:', e.message);
+    data = { labels: [], datasets: [], severityDatasets: [], cumulativeDatasets: [], stats: { total: 0, improved: 0, topType: '—', avgSeverity: '—' } };
   }
+  _curveData = data;
   renderGrowthChart(data);
 }
 
@@ -770,35 +804,91 @@ function renderGrowthChart(data) {
   if (_growthChart) _growthChart.destroy();
 
   const labels = data.labels || [];
-  const datasets = (data.datasets || []).map(ds => ({
-    label: ds.label,
-    data: ds.values,
-    borderColor: ds.color || '#7F77DD',
-    backgroundColor: (ds.color || '#7F77DD') + '18',
-    borderWidth: 2,
-    pointBackgroundColor: ds.color || '#7F77DD',
-    pointRadius: 4,
-    pointHoverRadius: 6,
-    tension: 0.35,
-    fill: false
-  }));
+  const stats = data.stats || {};
 
+  // 更新统计卡片
+  document.getElementById('statTotal').textContent = stats.total || '—';
+  document.getElementById('statImproved').textContent = stats.improved !== undefined ? stats.improved : '—';
+  document.getElementById('statTopType').textContent = stats.topType || '—';
+  document.getElementById('statAvgSev').textContent = stats.avgSeverity || '—';
+
+  // 无数据 → 显示空状态
+  const empty = document.getElementById('chartEmpty');
   if (labels.length === 0) {
-    document.getElementById('statTotal').textContent = '—';
-    document.getElementById('statImproved').textContent = '—';
-    document.getElementById('statRepeat').textContent = '—';
+    if (empty) { empty.style.display = 'flex'; empty.style.flexDirection = 'column'; }
+    document.getElementById('growthChart').style.display = 'none';
     return;
   }
+  if (empty) empty.style.display = 'none';
+  document.getElementById('growthChart').style.display = 'block';
+
+  // 根据视图选择数据集
+  let datasets = [];
+  let chartType = 'line';
+  let fillMode = false;
+
+  if (_curveView === 'type') {
+    datasets = (data.datasets || []).map(ds => ({
+      label: ds.label,
+      data: ds.values,
+      borderColor: ds.color || '#7F77DD',
+      backgroundColor: (ds.color || '#7F77DD') + '18',
+      borderWidth: 2.5,
+      pointBackgroundColor: ds.color || '#7F77DD',
+      pointBorderColor: ds.color || '#7F77DD',
+      pointRadius: 5,
+      pointHoverRadius: 7,
+      tension: 0.35,
+      fill: false
+    }));
+  } else if (_curveView === 'cumulative') {
+    datasets = (data.cumulativeDatasets || []).map(ds => ({
+      label: ds.label,
+      data: ds.values,
+      borderColor: ds.color || '#7F77DD',
+      backgroundColor: (ds.color || '#7F77DD') + '20',
+      borderWidth: 3,
+      pointBackgroundColor: ds.color || '#7F77DD',
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      tension: 0.3,
+      fill: true
+    }));
+  } else if (_curveView === 'severity') {
+    chartType = 'bar';
+    datasets = (data.severityDatasets || []).map(ds => ({
+      label: ds.label,
+      data: ds.values,
+      backgroundColor: (ds.color || '#7F77DD') + 'AA',
+      borderColor: ds.color || '#7F77DD',
+      borderWidth: 1,
+      borderRadius: 4,
+    }));
+    if (datasets.length === 0) {
+      // 没有严重度数据 → 用类型数据做柱状图
+      datasets = (data.datasets || []).map(ds => ({
+        label: ds.label,
+        data: ds.values,
+        backgroundColor: (ds.color || '#7F77DD') + 'AA',
+        borderColor: ds.color || '#7F77DD',
+        borderWidth: 1,
+        borderRadius: 4,
+      }));
+    }
+  }
+
+  const timeLabel = stats.timeRange === 'daily' ? '日期' : '周';
+  const isBar = chartType === 'bar';
 
   _growthChart = new Chart(ctx, {
-    type: 'line',
+    type: chartType,
     data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          labels: { color: 'rgba(255,255,255,0.6)', font: { size: 13 }, padding: 20, usePointStyle: true, pointStyleWidth: 10 }
+          labels: { color: 'rgba(255,255,255,0.6)', font: { size: 12 }, padding: 16, usePointStyle: true, pointStyleWidth: 10 }
         },
         tooltip: {
           backgroundColor: '#1a1a2e',
@@ -808,35 +898,25 @@ function renderGrowthChart(data) {
           borderWidth: 1,
           padding: 12,
           callbacks: {
-            label: ctx => `${ctx.dataset.label}：${ctx.parsed.y}${ctx.dataset.label.includes('率') ? '%' : '次'}`
+            label: ctx => `${ctx.dataset.label}：${ctx.parsed.y}次`
           }
         }
       },
       scales: {
         x: {
           grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 12 } }
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 12 } },
+          title: { display: true, text: timeLabel, color: 'rgba(255,255,255,0.25)', font: { size: 11 } }
         },
         y: {
           grid: { color: 'rgba(255,255,255,0.04)' },
-          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 12 } },
-          beginAtZero: true
+          ticks: { color: 'rgba(255,255,255,0.4)', font: { size: 12 }, stepSize: 1 },
+          beginAtZero: true,
+          title: { display: true, text: '次', color: 'rgba(255,255,255,0.25)', font: { size: 11 } }
         }
       }
     }
   });
-
-  if (datasets.length > 0) {
-    const lastVals = datasets.map(ds => ds.data[ds.data.length - 1]);
-    const avg = Math.round(lastVals.reduce((a,b)=>a+b,0) / lastVals.length);
-    document.getElementById('statTotal').textContent = datasets.reduce((a,ds)=> a + ds.data.reduce((x,y)=>x+y,0), 0);
-    document.getElementById('statImproved').textContent = datasets.filter(ds => {
-      const v = ds.data[ds.data.length-1];
-      const first = ds.data[0];
-      return first > 0 && v < first * 0.5;
-    }).length;
-    document.getElementById('statRepeat').textContent = avg + '%';
-  }
 }
 
 // ═══════════════════════════════════════════
@@ -1015,16 +1095,6 @@ function getFallbackHeatmap() {
       { label: "周四",   vals: [1, 2, 3, 0] },
       { label: "周五",   vals: [0, 1, 4, 0] },
       { label: "周末",   vals: [0, 0, 0, 2] },
-    ]
-  };
-}
-
-function getFallbackCurve() {
-  return {
-    labels: ["第1周", "第2周", "第3周", "第4周"],
-    datasets: [
-      { label: "沟通冲突", values: [5, 4, 3, 2], color: "#7F77DD" },
-      { label: "时间管理", values: [3, 3, 2, 1], color: "#1D9E75" },
     ]
   };
 }
